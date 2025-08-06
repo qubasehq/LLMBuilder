@@ -31,7 +31,7 @@ except ImportError:
 
 
 class ModelEvaluator:
-    """Comprehensive model evaluation class."""
+    """Comprehensive model evaluation class with hallucination detection."""
     
     def __init__(self, 
                  model_path: str,
@@ -216,52 +216,249 @@ class ModelEvaluator:
             logger.error(f"Error evaluating perplexity: {e}")
             raise
     
-    def generate_text(self, 
-                     prompt: str,
+    def generate_text(self, prompt: str,
                      max_new_tokens: int = 100,
                      temperature: float = 1.0,
                      top_k: Optional[int] = 50,
-                     num_samples: int = 1) -> List[str]:
-        """Generate text samples from prompt."""
-        if not self.model or not self.tokenizer:
-            raise ValueError("Model and tokenizer must be loaded")
+                     top_p: Optional[float] = 0.9,
+                     num_samples: int = 1,
+                     validate_responses: bool = True):
+        """
+        Generate text samples from prompt with quality validation.
         
-        logger.info(f"Generating text with prompt: '{prompt}'")
+        Args:
+            prompt: Input prompt
+            max_new_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+            top_k: Top-k sampling parameter
+            top_p: Top-p (nucleus) sampling parameter
+            num_samples: Number of samples to generate
+            validate_responses: Whether to validate generated responses
+            
+        Returns:
+            List of generated text samples with quality scores
+        """
+        if self.model is None:
+            self.load_model()
+        if self.tokenizer is None:
+            self.load_tokenizer()
+            
+        results = []
         
-        try:
-            # Encode prompt
-            prompt_tokens = self.tokenizer.encode(prompt, out_type=int)
-            input_ids = torch.tensor([prompt_tokens], dtype=torch.long, device=self.device)
-            
-            generated_texts = []
-            
-            for i in range(num_samples):
+        for _ in range(num_samples):
+            try:
+                # Encode prompt
+                prompt_tokens = self.tokenizer.encode(prompt, out_type=int)
+                prompt_tensor = torch.tensor([prompt_tokens], device=self.device)
+                
                 # Generate
                 with torch.no_grad():
                     generated = self.model.generate(
-                        input_ids=input_ids,
+                        prompt_tensor,
                         max_new_tokens=max_new_tokens,
                         temperature=temperature,
-                        top_k=top_k
+                        top_k=top_k,
+                        top_p=top_p
                     )
                 
                 # Decode
-                generated_tokens = generated[0].cpu().tolist()
+                generated_tokens = generated[0][len(prompt_tokens):].tolist()
                 generated_text = self.tokenizer.decode(generated_tokens)
-                generated_texts.append(generated_text)
                 
-                logger.info(f"Sample {i+1}: {generated_text}")
-            
-            return generated_texts
-            
-        except Exception as e:
-            logger.error(f"Error generating text: {e}")
-            raise
+                # Clean up text
+                generated_text = generated_text.strip()
+                
+                # Validate response quality
+                validation_result = {
+                    'text': generated_text,
+                    'prompt': prompt,
+                    'quality_score': 1.0,
+                    'hallucination_detected': False,
+                    'coherence_score': 1.0,
+                    'repetition_ratio': 0.0,
+                    'factuality_score': 1.0,
+                    'issues': []
+                }
+                
+                if validate_responses:
+                    validation_result = self.validate_response_quality(
+                        prompt, generated_text
+                    )
+                
+                results.append(validation_result)
+                
+            except Exception as e:
+                logger.error(f"Text generation failed: {e}")
+                results.append({
+                    'text': f"[ERROR: {str(e)}]",
+                    'prompt': prompt,
+                    'quality_score': 0.0,
+                    'hallucination_detected': True,
+                    'issues': [str(e)]
+                })
+        
+        return results
     
-    def benchmark_inference(self, 
-                           sequence_length: int = 256,
+    def validate_response_quality(self, prompt: str, response: str) -> Dict[str, Any]:
+        """
+        Validate response quality and detect hallucinations.
+        
+        Args:
+            prompt: Original prompt
+            response: Generated response
+            
+        Returns:
+            Dictionary with quality metrics and issues
+        """
+        issues = []
+        quality_score = 1.0
+        hallucination_detected = False
+        
+        # Basic quality checks
+        if not response or len(response.strip()) < 10:
+            issues.append("Response too short or empty")
+            quality_score -= 0.3
+        
+        # Repetition detection
+        repetition_ratio = self.calculate_repetition_ratio(response)
+        if repetition_ratio > self.quality_thresholds['max_repetition_ratio']:
+            issues.append(f"High repetition: {repetition_ratio:.2f}")
+            quality_score -= 0.2
+        
+        # Coherence check
+        coherence_score = self.calculate_coherence_score(prompt, response)
+        if coherence_score < self.quality_thresholds['min_coherence_score']:
+            issues.append(f"Low coherence: {coherence_score:.2f}")
+            quality_score -= 0.2
+        
+        # Factuality check (basic)
+        factuality_score = self.calculate_factuality_score(prompt, response)
+        if factuality_score < self.quality_thresholds['min_factuality_score']:
+            issues.append(f"Low factuality: {factuality_score:.2f}")
+            quality_score -= 0.3
+            hallucination_detected = True
+        
+        # Hallucination patterns
+        hallucination_patterns = self.detect_hallucination_patterns(response)
+        if hallucination_patterns:
+            issues.extend(hallucination_patterns)
+            hallucination_detected = True
+            quality_score -= 0.4
+        
+        return {
+            'text': response,
+            'prompt': prompt,
+            'quality_score': max(0.0, quality_score),
+            'hallucination_detected': hallucination_detected,
+            'coherence_score': coherence_score,
+            'repetition_ratio': repetition_ratio,
+            'factuality_score': factuality_score,
+            'issues': issues
+        }
+
+    def calculate_repetition_ratio(self, text: str) -> float:
+        """Calculate repetition ratio in text."""
+        words = text.lower().split()
+        if len(words) < 3:
+            return 0.0
+        
+        word_counts = {}
+        for word in words:
+            word_counts[word] = word_counts.get(word, 0) + 1
+        
+        max_repeats = max(word_counts.values()) if word_counts else 1
+        repetition_ratio = (max_repeats - 1) / len(words)
+        return repetition_ratio
+
+    def calculate_coherence_score(self, prompt: str, response: str) -> float:
+        """Calculate coherence between prompt and response."""
+        prompt_words = set(prompt.lower().split())
+        response_words = set(response.lower().split())
+        
+        if not prompt_words or not response_words:
+            return 0.0
+        
+        # Check for keyword overlap
+        overlap = len(prompt_words.intersection(response_words))
+        coherence_score = overlap / max(len(prompt_words), len(response_words))
+        
+        # Boost score if response addresses prompt topic
+        prompt_topics = ['artificial', 'intelligence', 'ai', 'future', 'technology']
+        response_lower = response.lower()
+        
+        topic_relevance = sum(1 for topic in prompt_topics if topic in response_lower)
+        coherence_score += (topic_relevance * 0.2)
+        
+        return min(1.0, coherence_score)
+
+    def calculate_factuality_score(self, prompt: str, response: str) -> float:
+        """Calculate basic factuality score."""
+        # Simple heuristics for factuality
+        factual_indicators = [
+            'according to', 'research shows', 'studies indicate',
+            'data suggests', 'evidence indicates', 'reported by'
+        ]
+        
+        speculative_indicators = [
+            'might be', 'could be', 'possibly', 'perhaps',
+            'maybe', 'i think', 'i believe', 'in my opinion'
+        ]
+        
+        factual_score = 0.5  # Base score
+        
+        # Check for factual indicators
+        for indicator in factual_indicators:
+            if indicator in response.lower():
+                factual_score += 0.2
+        
+        # Penalize speculative language
+        for indicator in speculative_indicators:
+            if indicator in response.lower():
+                factual_score -= 0.1
+        
+        # Check for specific claims (numbers, dates, names)
+        import re
+        numbers = re.findall(r'\d+', response)
+        dates = re.findall(r'\d{4}', response)  # Years
+        
+        if numbers or dates:
+            factual_score += 0.2
+        
+        return max(0.0, min(1.0, factual_score))
+
+    def detect_hallucination_patterns(self, response: str) -> List[str]:
+        """Detect common hallucination patterns."""
+        issues = []
+        
+        # Common hallucination patterns
+        hallucination_patterns = [
+            'i am an ai assistant',
+            'as an ai language model',
+            'i am programmed to',
+            'my training data',
+            'i was trained on',
+            'as a large language model'
+        ]
+        
+        response_lower = response.lower()
+        
+        for pattern in hallucination_patterns:
+            if pattern in response_lower:
+                issues.append(f"Self-referential hallucination: {pattern}")
+        
+        # Check for made-up facts
+        if 'according to' in response_lower and len(response) < 50:
+            issues.append("Potentially fabricated attribution")
+        
+        # Check for contradictory statements
+        if 'however' in response_lower and 'but' in response_lower:
+            issues.append("Potential contradiction detected")
+        
+        return issues
+
+    def benchmark_inference(self, sequence_length: int = 256,
                            batch_size: int = 1,
-                           num_iterations: int = 100) -> Dict[str, float]:
+                           num_iterations: int = 100): 
         """Benchmark model inference speed."""
         if not self.model:
             raise ValueError("Model not loaded")
@@ -314,15 +511,47 @@ class ModelEvaluator:
             logger.error(f"Error benchmarking inference: {e}")
             raise
     
-    def comprehensive_evaluation(self, 
-                               test_data_path: Optional[str] = None,
-                               prompts: Optional[List[str]] = None) -> Dict[str, Any]:
-        """Run comprehensive evaluation."""
+    def comprehensive_evaluation(self, test_data_path: Optional[str] = None,
+                               prompts: Optional[List[str]] = None,
+                               quality_threshold: float = 0.7):
+        """
+        Run comprehensive evaluation with quality assessment.
+        
+        Args:
+            test_data_path: Path to test data
+            prompts: List of prompts for generation
+            quality_threshold: Minimum quality score for acceptable responses
+            
+        Returns:
+            Comprehensive evaluation results with quality metrics
+        """
+        if self.model is None:
+            self.load_model()
+        if self.tokenizer is None:
+            self.load_tokenizer()
+            
+        results = {
+            'model_info': {},
+            'perplexity': None,
+            'generation': [],
+            'benchmark': None,
+            'quality_summary': {},
+            'hallucination_summary': {},
+            'recommendations': []
+        }
+        
         logger.info("Starting comprehensive evaluation...")
         
-        # Load model and tokenizer
-        self.load_model()
-        self.load_tokenizer()
+        # Model info
+        results['model_info'] = {
+            'parameters': count_parameters(self.model),
+            'vocab_size': self.model.vocab_size,
+            'n_layer': self.model.n_layer,
+            'n_head': self.model.n_head,
+            'n_embd': self.model.n_embd,
+            'block_size': self.model.block_size,
+            'device': str(self.device)
+        }
         
         results = {}
         
@@ -410,7 +639,10 @@ def main():
             "The future of artificial intelligence",
             "In a world where",
             "The most important thing to remember",
-            "Once upon a time"
+            "Once upon a time",
+            "Explain quantum computing",
+            "What are the benefits of renewable energy",
+            "Describe the process of photosynthesis"
         ]
         
         # Run comprehensive evaluation

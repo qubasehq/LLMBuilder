@@ -1,6 +1,6 @@
-# 🚀 **Complete Beginner's Guide: LLM Training Pipeline**
+# 📖 **Complete LLMBuilder Training Guide**
 
-**Welcome!** This guide will hold your hand through **every single step** of building your own Large Language Model (LLM) from scratch. No technical background needed - we'll explain everything as we go!
+**Welcome to your step-by-step journey with LLMBuilder by Qubasehq - from raw data to a working AI!** No technical background needed - we'll explain everything as we go!
 
 **What you'll achieve:**
 - ✅ Turn 10 PDF/TXT/DOCX files into a working AI
@@ -56,9 +56,8 @@ Imagine you're teaching a child to read and write. We're doing the same thing, b
 
 ## 🔄 Stage-by-Stage Execution
 
-## 🎯 **Let's Start! Stage 1: Preprocessing**
-
-**What this does:** Reads your 10 files and turns them into one clean text file.
+## 🎯 **Step 1: Data Preparation (LLMBuilder)**
+**What this does:** Gets your raw data ready for training with LLMBuilder by Qubasehq.
 
 ### **How to Run:**
 
@@ -105,7 +104,7 @@ run.bat preprocess
 
 ---
 
-## 🎯 **Stage 2: Teaching the Computer the Alphabet**
+## 🎯 **Step 2: Teaching the Computer the Alphabet**
 
 **What this does:** Creates a "dictionary" of 16,000 word pieces from your text.
 
@@ -146,11 +145,11 @@ run.bat tokenizer
 ```
 [ERROR] No cleaned data found. Please run preprocessing first.
 ```
-**Fix:** Run preprocessing first (Stage 1)!
+**Fix:** Run preprocessing first (Step 1)!
 
 ---
 
-## 🎯 **Stage 3: Training Your AI**
+## 🎯 **Step 3: Training Your AI**
 
 **What this does:** Actually teaches the computer to write like your documents.
 
@@ -196,7 +195,7 @@ Model size: 197MB
 
 ---
 
-## 🎯 **Stage 4: Testing Your AI**
+## 🎯 **Step 4: Testing Your AI**
 
 **What this does:** Checks how well your AI writes.
 
@@ -239,7 +238,7 @@ Generated: "The future of AI is bright and full of possibilities..."
 
 ---
 
-## 🎯 **Stage 5: Making It Even Better**
+## 🎯 **Step 5: Making It Even Better**
 
 **What this does:** Teaches your AI your specific style.
 
@@ -279,7 +278,7 @@ Epoch 1/5 - Loss: 1.943 → 1.234
 
 ---
 
-## 🎯 **Stage 6: Talking to Your AI**
+## 🎯 **Step 6: Talking to Your AI**
 
 **What this does:** Chat with your trained AI!
 
@@ -403,16 +402,153 @@ LLM/project/
 └── logs/ (detailed logs)
 ```
 
-**Ready to start? Just run:**
+## 🐘 **Handling Large Datasets (5-10GB+)**
+
+**Reality Check:** When you're dealing with 5-10GB of raw data, this isn't a 30-second project anymore. Here's what to expect and how to handle it properly.
+
+### 📊 **Realistic Expectations**
+
+| Data Size | Training Time | RAM Needed | Storage Needed |
+|-----------|---------------|------------|----------------|
+| 100MB     | 2-4 hours     | 4-8GB      | 2-5GB          |
+| 1GB       | 6-12 hours    | 8-16GB     | 10-20GB        |
+| 5GB       | 1-3 days      | 16-32GB    | 50-100GB       |
+| 10GB      | 3-7 days      | 32-64GB    | 100-200GB      |
+
+### 🎯 **Step-by-Step Strategy for Large Data**
+
+#### **Step 1: Data Sampling (Start Small)**
 ```bash
-./run.sh
+# Start with 100-500MB first
+./run.sh preprocess
+# Check the output size
+ls -lh data/cleaned/combined_text.txt
 ```
 
-**And watch the magic happen!** 🎉
+#### **Step 2: Memory Optimization**
+```bash
+# Edit config.json for large data
+{
+  "training": {
+    "batch_size": 4,        # Reduce from 8
+    "gradient_accumulation_steps": 4,  # Compensate
+    "max_seq_length": 256   # Reduce from 512
+  }
+}
+```
+
+#### **Step 3: Chunk Processing**
+```bash
+# Process data in chunks instead of all at once
+./run.sh preprocess --chunk-size 100MB
+# This processes 100MB at a time instead of loading everything
+```
+
+### 🚀 **Large Data Optimization Strategies**
+
+#### **1. Streaming Processing**
+```bash
+# Instead of loading all data into memory
+# Process line by line or chunk by chunk
+python tools/streaming_preprocess.py --input data/raw/ --chunk-size 100MB
+```
+
+#### **2. Distributed Training (Future)**
+```bash
+# When available, use multiple machines
+./run.sh train --distributed --nodes 4
+```
+
+#### **3. Cloud Training**
+```bash
+# For really large datasets
+# Use cloud instances with 64GB+ RAM
+# Google Colab Pro, AWS, or similar
+```
+
+### 📋 **Large Data Checklist**
+
+**Before you start:**
+- [ ] **Check your RAM:** Run `free -h` (Linux) or Task Manager (Windows)
+- [ ] **Check storage:** Run `df -h` (Linux) or check disk space
+- [ ] **Start small:** Use 100MB first to test the pipeline
+- [ ] **Monitor resources:** Use `htop` (Linux) or Activity Monitor (Mac)
+
+**During training:**
+- [ ] **Monitor logs:** Check `logs/training.log` for memory warnings
+- [ ] **Use checkpoints:** Training will save progress every 1000 steps
+- [ ] **Be patient:** 5GB+ data will take days, not hours
+
+### 🚨 **Warning Signs & Solutions**
+
+| Warning | What it means | Fix |
+|---------|---------------|-----|
+| "Killed 9" | Out of RAM | Reduce batch size, use CPU |
+| "Disk full" | No storage left | Clean up old checkpoints |
+| "Training stalled" | Still processing | Check logs, be patient |
+
+### 🎯 **Pro Tips for Large Data**
+
+#### **1. Sample Your Data First**
+```bash
+# Take a 1GB sample first
+head -c 1G data/raw/combined.txt > data/raw/sample_1gb.txt
+./run.sh preprocess
+```
+
+#### **2. Use External Storage**
+```bash
+# Store large files on external drive
+ln -s /mnt/external_drive/data data/raw/large_files
+```
+
+#### **3. Cloud Training Setup**
+```bash
+# For AWS/Google Cloud
+# Use instances with 32GB+ RAM
+# Use spot instances for cost savings
+```
+
+### 🎯 **Realistic Timeline**
+
+| Data Size | Your Setup | Realistic Time |
+|-----------|------------|----------------|
+| 5GB       | 8GB RAM    | Not possible (upgrade needed) |
+| 5GB       | 16GB RAM   | 2-3 days |
+| 5GB       | 32GB RAM   | 1-2 days |
+| 10GB      | 16GB RAM   | 4-7 days |
+| 10GB      | 32GB RAM   | 2-4 days |
+
+### 🎯 **Memory Calculator**
+
+**Quick formula:**
+```
+RAM_needed = (data_size_GB × 3) + 4GB
+Example: 5GB data needs ~19GB RAM
+```
+
+### 🎯 **Your Action Plan**
+
+**If you have 5-10GB data:**
+
+1. **Start with 100MB sample** - Test the pipeline
+2. **Check your system specs** - RAM and storage
+3. **Optimize config** - Reduce batch size and sequence length
+4. **Consider cloud training** - For really large datasets
+5. **Be patient** - This is a marathon, not a sprint
+
+**Ready for large data?** Start with:
+```bash
+# Test with 100MB first
+./run.sh preprocess
+# Check if your system can handle it
+```
+
+**Remember:** Large data training is like cooking a big meal - it takes time, but the results are worth it! 🎉
 
 ---
 
-### **Stage 2: Tokenizer Training**
+### **Step 2: Tokenizer Training**
 **Command**:
 ```bash
 ./run.sh tokenizer
@@ -433,7 +569,7 @@ LLM/project/
 
 ---
 
-### **Stage 3: Model Training**
+### **Step 3: Model Training**
 **Command**:
 ```bash
 ./run.sh train
@@ -457,7 +593,7 @@ Model size: 197MB
 
 ---
 
-### **Stage 4: Evaluation**
+### **Step 4: Evaluation**
 **Command**:
 ```bash
 ./run.sh eval
@@ -479,9 +615,20 @@ Prompt: "The future of AI is"
 Generated: "The future of AI is bright and full of possibilities..."
 ```
 
+**Troubleshooting Guide:**
+
+* **Hallucination Detection:**
+	+ Check if the model is generating text that is not present in the input data.
+	+ Adjust the `temperature` parameter in `config.json` to control the randomness of the generated text.
+	+ Try using a different evaluation metric, such as ROUGE score or METEOR score.
+* **Response Quality Issues:**
+	+ Check if the model is generating responses that are not relevant to the input prompt.
+	+ Adjust the `top_k` and `top_p` parameters in `config.json` to control the diversity of the generated text.
+	+ Try using a different decoding strategy, such as beam search or greedy decoding.
+
 ---
 
-### **Stage 5: Fine-tuning**
+### **Step 5: Fine-tuning**
 **Command**:
 ```bash
 ./run.sh finetune
@@ -491,7 +638,8 @@ Generated: "The future of AI is bright and full of possibilities..."
 ```
 data/finetune/
 ├── custom_data.txt
-└── domain_specific.txt
+├── domain_specific.txt
+└── personal_writing.txt
 ```
 
 **What Happens:**
@@ -503,14 +651,14 @@ data/finetune/
 ```
 === Starting Fine-tuning ===
 [INFO] Loading pre-trained model...
-[INFO] Fine-tuning on 2 custom datasets...
+[INFO] Fine-tuning on your custom data...
 Epoch 1/5 - Loss: 1.943 → 1.234
 [SUCCESS] Fine-tuned model saved to exports/checkpoints/finetuned/
 ```
 
 ---
 
-### **Stage 6: Interactive Inference**
+### **Step 6: Interactive Inference**
 **Command**:
 ```bash
 ./run.sh inference
@@ -539,11 +687,14 @@ sorted_numbers = sort_list(numbers)
 print(sorted_numbers)  # Output: [1, 1, 2, 3, 4, 5, 6, 9]
 
 Continue? (y/n): y
+
+Enter prompt: What did you learn from my files?
+[AI responds based on your specific documents...]
 ```
 
 ---
 
-### **Stage 7: Download Pre-trained Models**
+### **Step 7: Download Pre-trained Models**
 **Command**:
 ```bash
 ./run.sh download
@@ -617,4 +768,6 @@ Download complete! Files saved to: ./models/Qwen2.5-Coder-0.5B/
 3. **Try different models** → Use `download` stage
 4. **Export formats** → GGUF/ONNX (future enhancement)
 
-**Ready to start? Run `./run.sh` (or `run.bat`) and watch your LLM come to life!**
+**Ready to start with LLMBuilder? Just run:**
+```bash
+./run.sh

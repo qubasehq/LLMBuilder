@@ -1,6 +1,6 @@
-# LLM From Scratch
+# LLMBuilder
 
-A robust, production-ready implementation for training Large Language Models from scratch. This project provides a complete pipeline for data preprocessing, tokenizer training, model training, and evaluation, optimized for CPU execution with optional GPU support.
+A robust, production-ready implementation for training Large Language Models from scratch. Built by Qubasehq. This project provides a complete pipeline for data preprocessing, tokenizer training, model training, and evaluation, optimized for CPU execution with optional GPU support.
 
 ## 🚀 Features
 
@@ -27,7 +27,7 @@ A robust, production-ready implementation for training Large Language Models fro
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
-   cd 0day
+   cd LLMBuilder
    ```
 
 2. **Create virtual environment** (recommended):
@@ -41,7 +41,18 @@ A robust, production-ready implementation for training Large Language Models fro
    pip install -r requirements.txt
    ```
 
-## 📁 Project Structure
+## 📖 **Complete Step-by-Step Guide**
+
+**New to LLM training?** Check out our **[Complete Usage Guide](USAGE.md)** for:
+- 🎯 **Beginner-friendly walkthrough** of every stage
+- 📊 **Real terminal outputs** you'll see
+- 🚨 **Common problems** and their solutions
+- ☕ **Platform-specific commands** (Windows/Mac/Linux)
+- 🎉 **Interactive examples** and troubleshooting
+
+Perfect for first-time users! No technical background required.
+
+## 📁 Project Structure (LLMBuilder)
 
 ```
 ├── data/
@@ -317,17 +328,6 @@ python tools/download_hf_model.py --model Qwen/Qwen2.5-Coder-0.5B --output-dir .
 - The script will fetch all files for the specified model and save them to the output directory.
 - You can use these files for further fine-tuning or inference with this pipeline.
 
-## 📖 **Complete Step-by-Step Guide**
-
-**New to LLM training?** Check out our **[Complete Usage Guide](USAGE.md)** for:
-- 🎯 **Beginner-friendly walkthrough** of every stage
-- 📊 **Real terminal outputs** you'll see
-- 🚨 **Common problems** and their solutions
-- ☕ **Platform-specific commands** (Windows/Mac/Linux)
-- 🎉 **Interactive examples** and troubleshooting
-
-Perfect for first-time users! No technical background required.
-
 ## 📄 License
 
 This project is open source and available under the MIT License.
@@ -338,4 +338,4 @@ Contributions are welcome! Please feel free to submit pull requests, report bugs
 
 ---
 
-**Ready to train your own LLM?** Start by adding your data to `data/raw/` and running `./run.sh`! 
+**Ready to train your own LLM with LLMBuilder?** Start by adding your data to `data/raw/` and running `./run.sh`! 
