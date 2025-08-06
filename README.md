@@ -317,6 +317,17 @@ python tools/download_hf_model.py --model Qwen/Qwen2.5-Coder-0.5B --output-dir .
 - The script will fetch all files for the specified model and save them to the output directory.
 - You can use these files for further fine-tuning or inference with this pipeline.
 
+## 📖 **Complete Step-by-Step Guide**
+
+**New to LLM training?** Check out our **[Complete Usage Guide](USAGE.md)** for:
+- 🎯 **Beginner-friendly walkthrough** of every stage
+- 📊 **Real terminal outputs** you'll see
+- 🚨 **Common problems** and their solutions
+- ☕ **Platform-specific commands** (Windows/Mac/Linux)
+- 🎉 **Interactive examples** and troubleshooting
+
+Perfect for first-time users! No technical background required.
+
 ## 📄 License
 
 This project is open source and available under the MIT License.
