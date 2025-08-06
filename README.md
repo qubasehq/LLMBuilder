@@ -128,7 +128,25 @@ Perfect for first-time users! No technical background required.
 
 ### 1. Prepare Your Data
 
-Place your training documents in the `data/raw/` directory:
+**🚀 Smart Data Downloader (NEW!)**
+```bash
+# Download sample corpus with diverse topics
+python data/download_data.py --corpus
+
+# Download specific topics (15+ available)
+python data/download_data.py --topic literature --count 5
+python data/download_data.py --topic technology --count 3
+python data/download_data.py --topic science --count 4
+
+# Download specific books
+python data/download_data.py --book 1342 --book 84 --book 11
+```
+
+**📚 Available topics:** literature, science, technology, business, health, education, environment, sports, food, travel, religion, language, media
+
+**📖 Complete guide:** [data/SOURCES.md](data/SOURCES.md)
+
+**Manual option:** Place your documents in `data/raw/`:
 - **Text files** (.txt): Plain text documents
 - **PDF files** (.pdf): Will be automatically extracted
 - **Word documents** (.docx): Will be automatically extracted
