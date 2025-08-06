@@ -29,12 +29,59 @@ Imagine you're teaching a child to read and write. We're doing the same thing, b
 
 **Don't worry about technical stuff yet!** Just do this:
 
-### **For Windows Users:**
+### **🚀 Smart Data Downloader (NEW!)**
+
+**The easiest way to get started - download any topic automatically!**
+
+```bash
+# Download sample corpus with diverse topics
+python data/download_data.py --corpus
+
+# Download specific topics
+python data/download_data.py --topic technology --count 5
+python data/download_data.py --topic literature --count 3
+python data/download_data.py --topic science --count 4
+
+# Download specific classic books
+python data/download_data.py --book 1342 --book 84 --book 11
+
+# Available topics:
+# technology, science, literature, business, health, education
+# environment, sports, food, travel, religion, language, media
+```
+
+### **📚 15+ Topics Available:**
+- **Technology** - Python, AI/ML, programming docs
+- **Literature** - Pride & Prejudice, Frankenstein, Alice in Wonderland
+- **Science** - Research papers, scientific documentation
+- **Business** - Economics, finance, entrepreneurship
+- **Health** - Medical journals, wellness guides
+- **History** - Historical documents, world history
+- **And 10+ more topics!**
+
+### **📊 Sample Downloads:**
+```bash
+# Get 5 classic novels
+python data/download_data.py --topic literature --count 5
+
+# Get 3 science papers
+python data/download_data.py --topic science --count 3
+
+# Get business/economics content
+python data/download_data.py --topic business --count 4
+
+# Get complete sample corpus
+python data/download_data.py --corpus
+```
+
+### **📁 Manual File Addition (Alternative)**
+
+**For Windows Users:**
 1. Open File Explorer
 2. Go to `D:\LLM\project\data\raw\`
-3. Drag and drop your 10 files here
+3. Drag and drop your files here
 
-### **For Mac/Linux Users:**
+**For Mac/Linux Users:**
 1. Open Terminal
 2. Run: `cd ~/LLM/project/data/raw`
 3. Copy your files: `cp ~/Downloads/*.pdf .`
@@ -45,10 +92,20 @@ Imagine you're teaching a child to read and write. We're doing the same thing, b
 - DOCX files (Word documents)
 - **Total size:** 1MB-100MB works great
 
-**What if I don't have files?** No problem! Use any:
-- Download free ebooks from [Project Gutenberg](https://www.gutenberg.org)
-- Save Wikipedia articles as PDF
-- Use your own documents
+**What if I don't have files?** Use the smart downloader above!
+
+### **🎯 Quick Start Recommendation:**
+```bash
+# 1. Download sample data (easiest)
+python data/download_data.py --corpus
+
+# 2. Start training
+./run.sh preprocess
+
+# 3. Continue with tokenizer and training
+./run.sh tokenizer
+./run.sh train
+```
 
 ---
 
