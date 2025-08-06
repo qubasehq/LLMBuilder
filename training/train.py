@@ -21,6 +21,7 @@ from training.utils import (
     ConfigManager, CheckpointManager, DeviceManager, MetricsTracker,
     setup_logging, count_parameters, format_time
 )
+from training.quantization import QuantizationManager, QuantConfig
 
 
 class Trainer:
@@ -273,9 +274,50 @@ class Trainer:
                     'epoch': self.current_epoch
                 }, best_path)
                 logger.info(f"Best model saved: {best_path}")
+                
+                # Save quantized version
+                self.save_quantized_model(metrics)
             
         except Exception as e:
             logger.error(f"Error saving checkpoint: {e}")
+    
+    def save_quantized_model(self, metrics: Dict[str, float]):
+        """Save quantized version of the model."""
+        try:
+            # Create quantized model
+            quant_config = QuantConfig(
+                bits=8,
+                scheme="symmetric",
+                granularity="per_tensor"
+            )
+            
+            from training.quantization import QuantizedGPTModel
+            quantized_model = QuantizedGPTModel(self.config, quant_config)
+            quantized_model.load_state_dict(self.model.state_dict())
+            quantized_model.quantize_model()
+            
+            # Save quantized model
+            quant_path = Path("exports/checkpoints/best_model_quantized.pt")
+            torch.save({
+                'model': quantized_model,
+                'config': self.config,
+                'quant_config': quant_config,
+                'metrics': metrics,
+                'epoch': self.current_epoch
+            }, quant_path)
+            
+            logger.info(f"Quantized model saved: {quant_path}")
+            
+            # Calculate size reduction
+            original_size = QuantizationManager.get_model_size(self.model)
+            quantized_size = QuantizationManager.get_model_size(quantized_model)
+            
+            logger.info(f"Original size: {original_size['model_size_mb']:.2f} MB")
+            logger.info(f"Quantized size: {quantized_size['model_size_mb']:.2f} MB")
+            logger.info(f"Compression ratio: {original_size['model_size_mb']/quantized_size['model_size_mb']:.2f}x")
+            
+        except Exception as e:
+            logger.error(f"Error saving quantized model: {e}")
     
     def train(self):
         """Main training loop."""

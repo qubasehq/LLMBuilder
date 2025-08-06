@@ -96,20 +96,33 @@ Perfect for first-time users! No technical background required.
 
 ```
 ├── data/
-│   ├── raw/           # Place your training data here (.txt, .pdf, .docx)
-│   ├── cleaned/       # Preprocessed text files
-│   └── tokens/        # Tokenized datasets
+│   ├── raw/           # ✅ Place your training data here (.txt, .pdf, .docx)
+│   ├── cleaned/       # ✅ Preprocessed text files
+│   └── tokens/        # ✅ Tokenized datasets
 ├── model/
-│   └── gpt_model.py   # GPT model architecture
+│   └── gpt_model.py   # ✅ GPT model architecture
 ├── training/
-│   ├── config.yaml    # Training configuration
-│   ├── preprocess.py  # Data preprocessing
-│   ├── train_tokenizer.py  # Tokenizer training
-│   ├── train.py       # Model training
-│   ├── dataset.py     # Dataset utilities
-│   └── utils.py       # Common utilities
+│   ├── config.yaml    # ✅ Training configuration
+│   ├── preprocess.py  # ✅ Data preprocessing
+│   ├── train_tokenizer.py  # ✅ Tokenizer training
+│   ├── train.py       # ✅ Model training
+│   ├── quantization.py # ✅ Model quantization utilities
+│   ├── dataset.py     # ✅ Dataset utilities
+│   └── utils.py       # ✅ Common utilities
 ├── eval/
-│   └── eval.py        # Model evaluation
+│   └── eval.py        # ✅ Model evaluation
+├── tools/
+│   ├── download_hf_model.py # ✅ Download Hugging Face models
+│   └── export_gguf.py # ✅ Export to GGUF format
+├── exports/
+│   ├── checkpoints/   # ✅ Saved model checkpoints
+│   └── models/        # ✅ Exported models (GGUF, quantized)
+├── run.sh             # ✅ Linux/Mac training script
+├── run.bat            # ✅ Windows training script
+├── run.ps1            # ✅ PowerShell training script
+├── quantize_model.py  # ✅ Model quantization CLI
+└── requirements.txt   # ✅ Python dependencies
+```
 ├── exports/
 │   ├── checkpoints/   # Model checkpoints
 │   ├── gguf/         # GGUF exports (future)
@@ -349,13 +362,13 @@ The model implements a GPT-style transformer architecture:
 ## 🔮 Future Enhancements
 
 - [ ] GPU acceleration support
-- [ ] Model export to GGUF format
-- [ ] ONNX export for inference
+- [x] Model export to GGUF format ✅
+- [x] ONNX export for inference ✅
 - [ ] Distributed training
 - [ ] Web interface for training monitoring
-- [x] Pre-trained model downloads
-- [x] Fine-tuning capabilities
-- [ ] Quantization support
+- [x] Pre-trained model downloads ✅
+- [x] Fine-tuning capabilities ✅
+- [x] Quantization support ✅
 
 ## 📦 Downloading Pre-trained Models
 
