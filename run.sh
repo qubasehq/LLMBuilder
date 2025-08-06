@@ -92,17 +92,72 @@ setup_directories() {
     print_success "Directories created"
 }
 
+# Function to check system resources
+check_system_resources() {
+    print_status "Checking system resources..."
+    
+    # Check RAM
+    if command -v free &> /dev/null; then
+        total_ram=$(free -h | awk '/^Mem:/ {print $2}')
+        available_ram=$(free -h | awk '/^Mem:/ {print $7}')
+        print_status "Total RAM: $total_ram, Available: $available_ram"
+        
+        # Warn if less than 4GB
+        ram_gb=$(free -g | awk '/^Mem:/ {print $2}')
+        if [ "$ram_gb" -lt 4 ]; then
+            print_warning "Less than 4GB RAM detected. Consider using smaller batch sizes or shorter sequences."
+        fi
+    else
+        print_warning "Could not check RAM usage. Ensure you have at least 4GB available."
+    fi
+    
+    # Check storage
+    if command -v df &> /dev/null; then
+        current_dir=$(pwd)
+        storage_info=$(df -h "$current_dir" | tail -1)
+        available_storage=$(echo "$storage_info" | awk '{print $4}')
+        print_status "Available storage: $available_storage"
+        
+        # Warn if less than 5GB
+        storage_gb=$(df -BG "$current_dir" | tail -1 | awk '{print $4}' | sed 's/G//')
+        if [ "$storage_gb" -lt 5 ]; then
+            print_warning "Less than 5GB storage available. Consider starting with smaller data."
+        fi
+    else
+        print_warning "Could not check storage usage. Ensure you have at least 5GB available."
+    fi
+    
+    # Check CPU cores
+    if command -v nproc &> /dev/null; then
+        cpu_cores=$(nproc)
+        print_status "CPU cores: $cpu_cores"
+    else
+        cpu_cores=$(sysctl -n hw.ncpu 2>/dev/null || echo "unknown")
+        print_status "CPU cores: $cpu_cores"
+    fi
+}
+
 # Function to check if data exists
 check_data() {
     if [ ! -d "data/raw" ] || [ -z "$(ls -A data/raw 2>/dev/null)" ]; then
         print_warning "No data found in data/raw directory"
         print_status "Please add your training data (.txt, .pdf, .docx files) to data/raw/"
         print_status "You can also download sample data or use your own documents"
+        print_status "💡 TIP: Start with 100MB of data to test the pipeline first!"
         return 1
     fi
     
     file_count=$(find data/raw -type f \( -name "*.txt" -o -name "*.pdf" -o -name "*.docx" \) | wc -l)
-    print_status "Found $file_count data files in data/raw"
+    total_size=$(du -sh data/raw 2>/dev/null | cut -f1 || echo "unknown")
+    print_status "Found $file_count data files in data/raw (total size: $total_size)"
+    
+    # Warn about large datasets
+    size_mb=$(du -sm data/raw 2>/dev/null | cut -f1 || echo "0")
+    if [ "$size_mb" -gt 1000 ]; then
+        print_warning "Large dataset detected ($size_mb MB). Training may take days, not hours."
+        print_status "Consider starting with a smaller subset for testing."
+    fi
+    
     return 0
 }
 

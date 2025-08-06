@@ -71,6 +71,9 @@ echo %ESC%!BLUE!LLM Training Pipeline - Windows%ESC%!RESET!
 echo Stage: !STAGE!
 if !CPU_ONLY!==1 echo CPU-only mode enabled
 
+REM Check system resources
+call :check_system_resources
+
 REM Check if Python is available
 python --version >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
@@ -144,12 +147,63 @@ if exist "logs\training.log" (
 
 exit /b 0
 
+:check_system_resources
+    echo %ESC%!BLUE!=== System Resource Check ===%ESC%!RESET!
+    
+    REM Check RAM using PowerShell
+    for /f "tokens=*" %%r in ('powershell -command "[math]::Round((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum / 1GB, 2)" 2^>nul') do set "TOTAL_RAM=%%r"
+    for /f "tokens=*" %%r in ('powershell -command "[math]::Round((Get-Counter '\Memory\Available MBytes').CounterSamples[0].CookedValue / 1024, 2)" 2^>nul') do set "AVAILABLE_RAM=%%r"
+    
+    if defined TOTAL_RAM (
+        echo %ESC%!BLUE![INFO] Total RAM: !TOTAL_RAM! GB, Available: !AVAILABLE_RAM! GB!RESET!
+        
+        REM Warn if less than 4GB
+        if !TOTAL_RAM! LSS 4 (
+            echo %ESC%!YELLOW![WARNING] Less than 4GB RAM detected. Consider smaller batch sizes.!RESET!
+        )
+    ) else (
+        echo %ESC%!YELLOW![WARNING] Could not check RAM. Ensure you have at least 4GB available.!RESET!
+    )
+    
+    REM Check storage
+    for /f "tokens=*" %%r in ('powershell -command "[math]::Round((Get-PSDrive -Name (Get-Location).Drive.Name).Free / 1GB, 2)" 2^>nul') do set "AVAILABLE_STORAGE=%%r"
+    
+    if defined AVAILABLE_STORAGE (
+        echo %ESC%!BLUE![INFO] Available storage: !AVAILABLE_STORAGE! GB!RESET!
+        
+        REM Warn if less than 5GB
+        if !AVAILABLE_STORAGE! LSS 5 (
+            echo %ESC%!YELLOW![WARNING] Less than 5GB storage available. Consider starting with smaller data.!RESET!
+        )
+    ) else (
+        echo %ESC%!YELLOW![WARNING] Could not check storage. Ensure you have at least 5GB available.!RESET!
+    )
+    
+    REM Check CPU cores
+    for /f "tokens=*" %%r in ('powershell -command "(Get-CimInstance Win32_Processor).NumberOfLogicalProcessors" 2^>nul') do set "CPU_CORES=%%r"
+    if defined CPU_CORES (
+        echo %ESC%!BLUE![INFO] CPU cores: !CPU_CORES!!RESET!
+    )
+    
+    exit /b 0
+
 :run_preprocessing
     echo %ESC%!BLUE!=== Stage 1: Data Preprocessing ===%ESC%!RESET!
     if not exist "data\raw\*" (
         echo %ESC%!YELLOW!No data found in data\raw directory!RESET!
         echo Please add your training data (.txt, .pdf, .docx files) to data\raw\
+        echo %ESC%!GREEN!💡 TIP: Start with 100MB of data to test the pipeline first!!RESET!
         exit /b 1
+    )
+    
+    REM Check data size
+    for /f "tokens=*" %%r in ('powershell -command "[math]::Round((Get-ChildItem 'data\raw' -Recurse | Measure-Object -Property Length -Sum).sum / 1MB, 2)" 2^>nul') do set "DATA_SIZE=%%r"
+    if defined DATA_SIZE (
+        echo %ESC%!BLUE![INFO] Found data files: !DATA_SIZE! MB!RESET!
+        if !DATA_SIZE! GTR 1000 (
+            echo %ESC%!YELLOW![WARNING] Large dataset detected (!DATA_SIZE! MB). Training may take days.!RESET!
+            echo %ESC%!GREEN!Consider starting with a smaller subset for testing.!RESET!
+        )
     )
     
     %PYTHON% training\preprocess.py

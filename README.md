@@ -41,6 +41,46 @@ A robust, production-ready implementation for training Large Language Models fro
    pip install -r requirements.txt
    ```
 
+## ⚠️ **Before You Start - System Checks**
+
+**Check your system readiness before training:**
+
+### **System Requirements Check:**
+```bash
+# Check RAM (Linux/Mac)
+free -h
+# Check RAM (Windows)
+# Open Task Manager → Performance → Memory
+
+# Check storage (Linux/Mac)
+df -h
+# Check storage (Windows)
+# Open File Explorer → This PC
+
+# Check CPU cores
+nproc  # Linux/Mac
+echo %NUMBER_OF_PROCESSORS%  # Windows
+```
+
+### **🎯 Smart Starting Strategy:**
+- **Start small**: Use 100MB of data first to test the pipeline
+- **Test run**: Run 1000 iterations before committing to full training
+- **Monitor resources**: Watch memory usage during preprocessing
+- **Use checkpoints**: Training saves progress every 1000 steps automatically
+
+### **📊 During Training Monitoring:**
+- **Monitor logs**: Check `logs/training.log` for memory warnings
+- **Watch progress**: Training progress shown every 100 steps
+- **Be patient**: 5GB+ data will take **days**, not hours
+- **Use checkpoints**: You can always resume training from latest checkpoint
+
+### **🔍 Real-time Monitoring:**
+```bash
+# Linux/Mac: Monitor system resources
+htop
+# Windows: Use Task Manager or Resource Monitor
+```
+
 ## 📖 **Complete Step-by-Step Guide**
 
 **New to LLM training?** Check out our **[Complete Usage Guide](USAGE.md)** for:
