@@ -1,14 +1,325 @@
 #!/bin/bash
 
-# TODO:
-# - Automate full pipeline: preprocess -> tokenizer -> training
-# - Add CLI arguments to run specific stages
+# LLM Training Pipeline
+# Comprehensive automation script for the complete training pipeline
+# Usage: ./run.sh [stage] [options]
+#   stage: preprocess|tokenizer|train|eval|all (default: all)
+#   options: --cpu-only, --help
 
-echo "[1/3] Preprocessing data..."
-python training/preprocess.py
+set -e  # Exit on any error
 
-echo "[2/3] Training tokenizer..."
-python training/train_tokenizer.py
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-echo "[3/3] Training model..."
-python training/train.py
+# Configuration
+CPU_ONLY=false
+STAGE="all"
+VERBOSE=false
+
+# Function to print colored output
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to check Python version meets requirements
+check_python() {
+    if ! command -v python &> /dev/null; then
+        print_error "Python is not installed or not in PATH"
+        exit 1
+    fi
+    
+    # Get Python version components
+    python_version=$(python --version 2>&1 | cut -d' ' -f2)
+    python_major=$(python -c "import sys; print(sys.version_info.major)")
+    python_minor=$(python -c "import sys; print(sys.version_info.minor)")
+    
+    # Check if Python version is at least 3.8
+    if [ "$python_major" -lt 3 ] || { [ "$python_major" -eq 3 ] && [ "$python_minor" -lt 8 ]; }; then
+        print_error "Python 3.8 or higher is required. Found Python $python_version"
+        exit 1
+    fi
+    
+    print_status "Using Python $python_version"
+}
+
+# Function to check dependencies
+check_dependencies() {
+    print_status "Checking dependencies..."
+    
+    if [ ! -f "requirements.txt" ]; then
+        print_error "requirements.txt not found"
+        exit 1
+    fi
+    
+    # Check if virtual environment is recommended
+    if [ -z "$VIRTUAL_ENV" ]; then
+        print_warning "No virtual environment detected. Consider using one."
+    fi
+    
+    # Install dependencies if needed
+    print_status "Installing/updating dependencies..."
+    python -m pip install -r requirements.txt
+    
+    print_success "Dependencies checked"
+}
+
+# Function to create necessary directories
+setup_directories() {
+    print_status "Setting up directories..."
+    
+    directories=("data/raw" "data/cleaned" "data/tokens" "tokenizer" "exports/checkpoints" "exports/gguf" "exports/onnx" "logs")
+    
+    for dir in "${directories[@]}"; do
+        mkdir -p "$dir"
+    done
+    
+    print_success "Directories created"
+}
+
+# Function to check if data exists
+check_data() {
+    if [ ! -d "data/raw" ] || [ -z "$(ls -A data/raw 2>/dev/null)" ]; then
+        print_warning "No data found in data/raw directory"
+        print_status "Please add your training data (.txt, .pdf, .docx files) to data/raw/"
+        print_status "You can also download sample data or use your own documents"
+        return 1
+    fi
+    
+    file_count=$(find data/raw -type f \( -name "*.txt" -o -name "*.pdf" -o -name "*.docx" \) | wc -l)
+    print_status "Found $file_count data files in data/raw"
+    return 0
+}
+
+# Function to run preprocessing
+run_preprocessing() {
+    print_status "=== Stage 1: Data Preprocessing ==="
+    
+    if ! check_data; then
+        print_error "Cannot proceed without training data"
+        exit 1
+    fi
+    
+    print_status "Starting data preprocessing..."
+    
+    if python training/preprocess.py; then
+        print_success "Data preprocessing completed"
+    else
+        print_error "Data preprocessing failed"
+        exit 1
+    fi
+    
+    # Check output
+    if [ -f "data/cleaned/combined_text.txt" ]; then
+        file_size=$(stat -f%z "data/cleaned/combined_text.txt" 2>/dev/null || stat -c%s "data/cleaned/combined_text.txt" 2>/dev/null || echo "unknown")
+        print_status "Combined text file size: $file_size bytes"
+    fi
+}
+
+# Function to run tokenizer training
+run_tokenizer_training() {
+    print_status "=== Stage 2: Tokenizer Training ==="
+    
+    if [ ! -f "data/cleaned/combined_text.txt" ]; then
+        print_error "No cleaned data found. Please run preprocessing first."
+        exit 1
+    fi
+    
+    print_status "Starting tokenizer training..."
+    
+    if python training/train_tokenizer.py; then
+        print_success "Tokenizer training completed"
+    else
+        print_error "Tokenizer training failed"
+        exit 1
+    fi
+    
+    # Check output
+    if [ -f "tokenizer/tokenizer.model" ] && [ -f "data/tokens/tokens.pt" ]; then
+        print_success "Tokenizer and tokenized dataset created successfully"
+    else
+        print_error "Tokenizer output files not found"
+        exit 1
+    fi
+}
+
+# Function to run model training
+run_model_training() {
+    print_status "=== Stage 3: Model Training ==="
+    
+    if [ ! -f "data/tokens/tokens.pt" ]; then
+        print_error "No tokenized data found. Please run tokenizer training first."
+        exit 1
+    fi
+    
+    if [ ! -f "tokenizer/tokenizer.model" ]; then
+        print_error "No tokenizer found. Please run tokenizer training first."
+        exit 1
+    fi
+    
+    print_status "Starting model training..."
+    print_status "This may take a while depending on your data size and hardware..."
+    
+    if [ "$CPU_ONLY" = true ]; then
+        print_status "Training on CPU (forced)"
+    fi
+    
+    if python training/train.py; then
+        print_success "Model training completed"
+    else
+        print_error "Model training failed"
+        exit 1
+    fi
+    
+    # Check output
+    if [ -f "exports/checkpoints/best_model.pt" ]; then
+        print_success "Best model checkpoint saved"
+    else
+        print_warning "Best model checkpoint not found, but training may have completed"
+    fi
+}
+
+# Function to run evaluation
+run_evaluation() {
+    print_status "=== Stage 4: Model Evaluation ==="
+    
+    if [ ! -f "exports/checkpoints/best_model.pt" ]; then
+        print_error "No trained model found. Please run training first."
+        exit 1
+    fi
+    
+    if [ ! -f "tokenizer/tokenizer.model" ]; then
+        print_error "No tokenizer found. Please run tokenizer training first."
+        exit 1
+    fi
+    
+    print_status "Starting model evaluation..."
+    
+    if python eval/eval.py; then
+        print_success "Model evaluation completed"
+    else
+        print_error "Model evaluation failed"
+        exit 1
+    fi
+}
+
+# Function to show help
+show_help() {
+    echo "LLM Training Pipeline"
+    echo "Usage: $0 [stage] [options]"
+    echo ""
+    echo "Stages:"
+    echo "  preprocess  - Run data preprocessing only"
+    echo "  tokenizer   - Run tokenizer training only"
+    echo "  train       - Run model training only"
+    echo "  eval        - Run model evaluation only"
+    echo "  all         - Run complete pipeline (default)"
+    echo ""
+    echo "Options:"
+    echo "  --cpu-only  - Force CPU-only training"
+    echo "  --verbose   - Enable verbose output"
+    echo "  --help      - Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                    # Run complete pipeline"
+    echo "  $0 preprocess        # Run preprocessing only"
+    echo "  $0 train --cpu-only  # Train on CPU only"
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        preprocess|tokenizer|train|eval|all)
+            STAGE="$1"
+            shift
+            ;;
+        --cpu-only)
+            CPU_ONLY=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Main execution
+main() {
+    print_status "Starting LLM Training Pipeline"
+    print_status "Stage: $STAGE"
+    
+    if [ "$CPU_ONLY" = true ]; then
+        print_status "CPU-only mode enabled"
+    fi
+    
+    # Setup
+    check_python
+    check_dependencies
+    setup_directories
+    
+    # Execute based on stage
+    case $STAGE in
+        "preprocess")
+            run_preprocessing
+            ;;
+        "tokenizer")
+            run_tokenizer_training
+            ;;
+        "train")
+            run_model_training
+            ;;
+        "eval")
+            run_evaluation
+            ;;
+        "all")
+            run_preprocessing
+            run_tokenizer_training
+            run_model_training
+            run_evaluation
+            ;;
+        *)
+            print_error "Invalid stage: $STAGE"
+            show_help
+            exit 1
+            ;;
+    esac
+    
+    print_success "Pipeline completed successfully!"
+    print_status "Check the logs/ directory for detailed logs"
+    
+    if [ "$STAGE" = "all" ] || [ "$STAGE" = "train" ]; then
+        print_status "Your trained model is available at: exports/checkpoints/best_model.pt"
+    fi
+    
+    if [ "$STAGE" = "all" ] || [ "$STAGE" = "eval" ]; then
+        print_status "Evaluation results are in the logs"
+    fi
+}
+
+# Run main function
+main

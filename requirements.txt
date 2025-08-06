@@ -1,10 +1,20 @@
-# TODO: Pin dependencies here
-transformers
-torch
-tokenizers
-sentencepiece
-pandas
-tqdm
-pyyaml
-fitz  # PyMuPDF
-docx2txt
+# Core ML dependencies
+torch>=2.0.0,<3.0.0
+transformers>=4.30.0,<5.0.0
+tokenizers>=0.13.0,<1.0.0
+sentencepiece>=0.1.99,<1.0.0
+
+# Data processing
+pandas>=2.0.0,<3.0.0
+numpy>=1.24.0,<2.0.0
+PyMuPDF>=1.23.0,<2.0.0  # fitz
+docx2txt>=0.8,<1.0.0
+
+# Utilities
+tqdm>=4.65.0,<5.0.0
+PyYAML>=6.0,<7.0.0
+loguru>=0.7.0,<1.0.0
+
+# Optional GPU support (can be installed separately)
+# torch[cuda] for CUDA support
+# Add when GPU training is needed

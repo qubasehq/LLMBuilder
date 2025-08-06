@@ -1,0 +1,98 @@
+{
+  "model": {
+    "vocab_size": 16000,
+    "embedding_dim": 512,
+    "num_layers": 6,
+    "num_heads": 8,
+    "hidden_dim": 2048,
+    "max_seq_length": 256,
+    "dropout": 0.1,
+    "use_bias": true,
+    "tie_weights": true
+  },
+  "training": {
+    "batch_size": 16,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.01,
+    "num_epochs": 10,
+    "warmup_steps": 1000,
+    "gradient_clip_norm": 1.0,
+    "save_every": 1000,
+    "eval_every": 500,
+    "log_every": 100,
+    "use_mixed_precision": false,
+    "num_workers": 4,
+    "pin_memory": false
+  },
+  "tokenizer": {
+    "vocab_size": 16000,
+    "model_type": "bpe",
+    "character_coverage": 0.9995,
+    "input_sentence_size": 10000000,
+    "shuffle_input_sentence": true,
+    "normalization_rule_name": "nmt_nfkc_cf",
+    "remove_extra_whitespaces": true,
+    "add_dummy_prefix": true,
+    "eos_id": 1,
+    "unk_id": 0,
+    "bos_id": 2,
+    "pad_id": 3
+  },
+  "preprocessing": {
+    "min_length": 10,
+    "max_length": 10000,
+    "remove_duplicates": true,
+    "normalize_whitespace": true,
+    "remove_empty_lines": true,
+    "encoding": "utf-8",
+    "chunk_size": 1000000,
+    "supported_formats": ["txt", "pdf", "docx"]
+  },
+  "evaluation": {
+    "batch_size": 16,
+    "max_new_tokens": 100,
+    "temperature": 0.8,
+    "top_k": 50,
+    "top_p": 0.9,
+    "do_sample": true,
+    "num_return_sequences": 3,
+    "benchmark_iterations": 100,
+    "perplexity_stride": 128
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} - {message}",
+    "rotation": "10 MB",
+    "retention": "7 days",
+    "compression": "gz",
+    "colorize": true
+  },
+  "paths": {
+    "data_dir": "data",
+    "raw_data_dir": "data/raw",
+    "cleaned_data_dir": "data/cleaned",
+    "tokenized_data_dir": "data/tokens",
+    "tokenizer_dir": "exports/tokenizer",
+    "checkpoint_dir": "exports/checkpoints",
+    "log_dir": "logs",
+    "export_dir": "exports"
+  },
+  "device": {
+    "use_cuda": false,
+    "cuda_device": 0,
+    "use_mps": false,
+    "cpu_threads": 0,
+    "enable_mkldnn": true,
+    "mixed_precision": false
+  },
+  "optimization": {
+    "optimizer": "adamw",
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "eps": 1e-8,
+    "scheduler": "cosine",
+    "min_lr": 1e-6,
+    "compile_model": false,
+    "use_fused_adamw": false
+  }
+}

@@ -1,0 +1,16 @@
+[2025-08-07 00:49:25] [ERROR] Python 3.8 or higher is required. Found Python 3.12.6
+[2025-08-07 00:52:55] [INFO] Using Python version: 3.12.6
+[2025-08-07 00:52:55] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 00:52:55] [INFO] Python version: 3.12.6
+[2025-08-07 00:52:55] [INFO] Stage: all
+[2025-08-07 00:52:55] [INFO] Config: config.json
+[2025-08-07 00:52:55] [ERROR] Config file not found: config.json
+[2025-08-07 00:54:43] [INFO] Using Python version: 3.12.6
+[2025-08-07 00:54:43] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 00:54:43] [INFO] Python version: 3.12.6
+[2025-08-07 00:54:43] [INFO] Stage: all
+[2025-08-07 00:54:43] [INFO] Config: config.json
+[2025-08-07 00:54:43] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 00:54:43] [WARNING] No files found in D:\LLM\project\data\raw
+[2025-08-07 00:54:43] [INFO] Please add your training data (PDF/DOCX/TXT) to D:\LLM\project\data\raw
+[2025-08-07 00:54:43] [ERROR] Pipeline failed after 00:00:00
