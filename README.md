@@ -262,11 +262,11 @@ The model implements a GPT-style transformer architecture:
 
 ### Default Configuration
 
-- **Parameters**: ~15M (configurable)
-- **Layers**: 6 transformer blocks
-- **Attention Heads**: 6
-- **Embedding Dimension**: 512
-- **Context Window**: 256 tokens
+- **Parameters**: ~50M (configurable)
+- **Layers**: 12 transformer blocks
+- **Attention Heads**: 12
+- **Embedding Dimension**: 768
+- **Context Window**: 512 tokens
 - **Vocabulary**: 16,000 tokens (BPE)
 
 ## 🔮 Future Enhancements
