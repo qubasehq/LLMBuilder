@@ -27,7 +27,7 @@ A robust, production-ready implementation for training Large Language Models fro
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
-   cd LLM-from-scratch
+   cd 0day
    ```
 
 2. **Create virtual environment** (recommended):
