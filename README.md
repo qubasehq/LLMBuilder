@@ -106,7 +106,33 @@ You can also run individual stages:
 
 # Model evaluation only
 ./run.sh eval
+
+# Fine-tune a pre-trained model (add your data to data/finetune/)
+./run.sh finetune
+
+# Launch interactive inference (text generation)
+./run.sh inference
 ```
+
+**On Windows:**
+
+```bat
+REM Use run.bat (Batch) or run.ps1 (PowerShell)
+run.bat finetune
+run.ps1 -Stage finetune
+run.bat inference
+run.ps1 -Stage inference
+```
+
+### Fine-tuning
+- Place your fine-tuning data (txt/pdf/docx) in `data/finetune/`.
+- The script will use the latest checkpoint for fine-tuning.
+- Output will be saved to `exports/checkpoints/finetuned/`.
+
+### Inference (Text Generation)
+- The `inference` stage launches an interactive prompt for text generation.
+- Uses the latest model checkpoint and tokenizer.
+- Supports temperature, top-k, and top-p sampling.
 
 ## ⚙️ Configuration
 
@@ -276,9 +302,20 @@ The model implements a GPT-style transformer architecture:
 - [ ] ONNX export for inference
 - [ ] Distributed training
 - [ ] Web interface for training monitoring
-- [ ] Pre-trained model downloads
-- [ ] Fine-tuning capabilities
+- [x] Pre-trained model downloads
+- [x] Fine-tuning capabilities
 - [ ] Quantization support
+
+## 📦 Downloading Pre-trained Models
+
+You can automatically download any pre-trained model from HuggingFace using the provided script:
+
+```bash
+python tools/download_hf_model.py --model Qwen/Qwen2.5-Coder-0.5B --output-dir ./models/Qwen2.5-Coder-0.5B
+```
+
+- The script will fetch all files for the specified model and save them to the output directory.
+- You can use these files for further fine-tuning or inference with this pipeline.
 
 ## 📄 License
 

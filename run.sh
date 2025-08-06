@@ -196,16 +196,9 @@ run_model_training() {
 
 # Function to run evaluation
 run_evaluation() {
-    print_status "=== Stage 4: Model Evaluation ==="
-    
-    if [ ! -f "exports/checkpoints/best_model.pt" ]; then
-        print_error "No trained model found. Please run training first."
-        exit 1
-    fi
-    
-    if [ ! -f "tokenizer/tokenizer.model" ]; then
-        print_error "No tokenizer found. Please run tokenizer training first."
-        exit 1
+    if [ ! -d "$CHECKPOINT_DIR" ] || [ -z "$(ls -A $CHECKPOINT_DIR/*.pt 2>/dev/null)" ]; then
+        print_error "No model checkpoints found in $CHECKPOINT_DIR"
+        return 1
     fi
     
     print_status "Starting model evaluation..."
@@ -214,6 +207,54 @@ run_evaluation() {
         print_success "Model evaluation completed"
     else
         print_error "Model evaluation failed"
+        exit 1
+    fi
+}
+
+# Function to run fine-tuning
+run_finetuning() {
+    if [ ! -d "$CHECKPOINT_DIR" ] || [ -z "$(ls -A $CHECKPOINT_DIR/*.pt 2>/dev/null)" ]; then
+        print_error "No base model checkpoints found in $CHECKPOINT_DIR"
+        print_error "Please train a model first or specify a pre-trained model path"
+        return 1
+    fi
+    
+    FINETUNE_DATA_DIR="data/finetune"
+    if [ ! -d "$FINETUNE_DATA_DIR" ] || [ -z "$(find $FINETUNE_DATA_DIR -type f 2>/dev/null)" ]; then
+        print_warning "No fine-tuning data found in $FINETUNE_DATA_DIR"
+        print_warning "Please add your fine-tuning data to $FINETUNE_DATA_DIR"
+        return 1
+    fi
+    
+    print_status "Starting model fine-tuning..."
+    
+    # Get the latest checkpoint
+    LATEST_CHECKPOINT=$(ls -t $CHECKPOINT_DIR/*.pt 2>/dev/null | head -1)
+    
+    if python training/finetune.py --config config.json --pretrained-model "$LATEST_CHECKPOINT" --train-data "$FINETUNE_DATA_DIR" --tokenizer-dir "$TOKENIZER_DIR"; then
+        print_success "Model fine-tuning completed"
+    else
+        print_error "Model fine-tuning failed"
+        exit 1
+    fi
+}
+
+# Function to run inference
+run_inference() {
+    if [ ! -d "$CHECKPOINT_DIR" ] || [ -z "$(ls -A $CHECKPOINT_DIR/*.pt 2>/dev/null)" ]; then
+        print_error "No model checkpoints found in $CHECKPOINT_DIR"
+        return 1
+    fi
+    
+    print_status "Starting interactive inference..."
+    
+    # Get the latest checkpoint
+    LATEST_CHECKPOINT=$(ls -t $CHECKPOINT_DIR/*.pt 2>/dev/null | head -1)
+    
+    if python inference.py --model "$LATEST_CHECKPOINT" --tokenizer "$TOKENIZER_DIR" --config config.json --interactive; then
+        print_success "Inference session completed"
+    else
+        print_error "Inference failed"
         exit 1
     fi
 }
@@ -227,6 +268,11 @@ show_help() {
     echo "  preprocess  - Run data preprocessing only"
     echo "  tokenizer   - Run tokenizer training only"
     echo "  train       - Run model training only"
+    echo "  eval        - Run model evaluation only"
+    echo "  finetune    - Fine-tune a pre-trained model"
+    echo "  inference   - Run interactive text generation"
+    echo "  download    - Download a HuggingFace model"
+    echo "  all         - Run all main stages (default)"
     echo "  eval        - Run model evaluation only"
     echo "  all         - Run complete pipeline (default)"
     echo ""
@@ -244,7 +290,7 @@ show_help() {
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        preprocess|tokenizer|train|eval|all)
+        preprocess|tokenizer|train|eval|finetune|inference|download|all)
             STAGE="$1"
             shift
             ;;
@@ -295,6 +341,15 @@ main() {
             ;;
         "eval")
             run_evaluation
+            ;;
+        "finetune")
+            run_finetuning
+            ;;
+        "inference")
+            run_inference
+            ;;
+        "download")
+            run_download
             ;;
         "all")
             run_preprocessing

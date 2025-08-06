@@ -1,7 +1,7 @@
 @echo off
 REM LLM Training Pipeline - Windows Batch Version
 REM Usage: run.bat [stage] [options]
-REM   stage: preprocess|tokenizer|train|eval|all (default: all)
+REM   stage: preprocess|tokenizer|train|eval|download|all (default: all)
 REM   options: /cpu-only, /help
 
 setlocal enabledelayedexpansion
@@ -44,6 +44,8 @@ if /i "%~1"=="preprocess" (
     SET STAGE=train
 ) else if /i "%~1"=="eval" (
     SET STAGE=eval
+) else if /i "%~1"=="download" (
+    SET STAGE=download
 ) else if /i "%~1"=="all" (
     SET STAGE=all
 ) else if /i "%~1"=="/cpu-only" (
@@ -119,6 +121,8 @@ if "!STAGE!"=="preprocess" (
     call :run_training
 ) else if "!STAGE!"=="eval" (
     call :run_evaluation
+) else if "!STAGE!"=="download" (
+    call :run_download
 ) else if "!STAGE!"=="all" (
     call :run_preprocessing
     if !ERRORLEVEL! NEQ 0 exit /b !ERRORLEVEL!
@@ -217,6 +221,7 @@ exit /b 0
     echo   tokenizer   - Run tokenizer training only
     echo   train       - Run model training only
     echo   eval        - Run model evaluation only
+    echo   download    - Download a HuggingFace model
     echo   all         - Run complete pipeline (default)
     echo.
     echo Options:
@@ -227,5 +232,21 @@ exit /b 0
     echo Examples:
     echo   run.bat                    ^> Run complete pipeline
     echo   run.bat preprocess         ^> Run preprocessing only
+    echo   run.bat download           ^> Download a HuggingFace model
     echo   run.bat train /cpu-only    ^> Train on CPU only
     exit /b 0
+
+:run_download
+    echo %ESC%!BLUE!=== Download HuggingFace Model ===%ESC%!RESET!
+    set /p MODEL_NAME="Enter HuggingFace model name (e.g. Qwen/Qwen2.5-Coder-0.5B): "
+    set /p OUTPUT_DIR="Enter output directory (default: ./models/<model_name>): "
+    if "%MODEL_NAME%"=="" (
+        echo %ESC%!RED!Model name is required!RESET!
+        exit /b 1
+    )
+    if "%OUTPUT_DIR%"=="" (
+        %PYTHON% tools\download_hf_model.py --model "%MODEL_NAME%"
+    ) else (
+        %PYTHON% tools\download_hf_model.py --model "%MODEL_NAME%" --output-dir "%OUTPUT_DIR%"
+    )
+    exit /b !ERRORLEVEL!

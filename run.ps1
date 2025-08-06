@@ -12,13 +12,16 @@
     - tokenizer:  Train the tokenizer (requires preprocessed data)
     - train:      Train the model (requires tokenizer)
     - eval:       Run evaluation (requires trained model)
+    - finetune:   Fine-tune a pre-trained model
+    - inference:  Run interactive text generation
+    - download:   Download a HuggingFace model
     - all:        Run all stages (default)
     
     Example: .\run.ps1 -Stage train -Config config.json
 #>
 
 param(
-    [ValidateSet("preprocess", "tokenizer", "train", "eval", "all")]
+    [ValidateSet("preprocess", "tokenizer", "train", "eval", "finetune", "inference", "download", "all")]
     [string]$Stage = "all",
     
     [string]$Config = "config.json",
@@ -217,6 +220,60 @@ function Invoke-EvalStage {
     return (Invoke-SafeCommand -Command $command -ErrorMsg "Evaluation failed" -SuccessMsg "Evaluation completed successfully")
 }
 
+# Function to run fine-tuning
+function Invoke-FinetuneStage {
+    Write-Log "=== Starting Model Fine-tuning ==="
+    
+    # Check if base model exists
+    $latestCheckpoint = Get-ChildItem -Path $CHECKPOINT_DIR -Filter "*.pt" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $latestCheckpoint) {
+        Write-Log "No base model checkpoints found in $CHECKPOINT_DIR" "ERROR"
+        Write-Log "Please train a model first or specify a pre-trained model path"
+        return $false
+    }
+    
+    # Check if fine-tuning data exists
+    $finetuneDataDir = Join-Path $DATA_DIR "finetune"
+    if (-not (Test-Path $finetuneDataDir) -or -not (Get-ChildItem -Path $finetuneDataDir -File -Recurse)) {
+        Write-Log "No fine-tuning data found in $finetuneDataDir" "WARNING"
+        Write-Log "Please add your fine-tuning data to $finetuneDataDir"
+        return $false
+    }
+    
+    $command = "$PYTHON training/finetune.py --config $Config --pretrained-model $($latestCheckpoint.FullName) --train-data $finetuneDataDir --tokenizer-dir $TOKENIZER_DIR"
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "Fine-tuning failed" -SuccessMsg "Fine-tuning completed successfully")
+}
+
+# Function to run inference
+function Invoke-InferenceStage {
+    Write-Log "=== Starting Interactive Inference ==="
+    
+    # Check if model exists
+    $latestCheckpoint = Get-ChildItem -Path $CHECKPOINT_DIR -Filter "*.pt" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $latestCheckpoint) {
+        Write-Log "No model checkpoints found in $CHECKPOINT_DIR" "ERROR"
+        return $false
+    }
+    
+    Write-Log "Starting interactive text generation..."
+    $command = "$PYTHON inference.py --model $($latestCheckpoint.FullName) --tokenizer $TOKENIZER_DIR --config $Config --interactive"
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "Inference failed" -SuccessMsg "Inference session completed")
+}
+
+# Function to download HuggingFace model
+function Invoke-DownloadStage {
+    Write-Log "=== Downloading HuggingFace Model ==="
+    $modelName = Read-Host "Enter HuggingFace model name (e.g. Qwen/Qwen2.5-Coder-0.5B)"
+    $outputDir = Read-Host "Enter output directory (default: ./models/<model_name>)"
+    if ([string]::IsNullOrWhiteSpace($modelName)) {
+        Write-Log "Model name is required" "ERROR"
+        return $false
+    }
+    $outputArg = if ([string]::IsNullOrWhiteSpace($outputDir)) { "" } else { "--output-dir `"$outputDir`"" }
+    $command = "$PYTHON tools/download_hf_model.py --model $modelName $outputArg"
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "Model download failed" -SuccessMsg "Model download completed")
+}
+
 # Main execution
 $success = $true
 $startTime = Get-Date
@@ -234,6 +291,15 @@ try {
         }
         "eval" {
             $success = Invoke-EvalStage
+        }
+        "finetune" {
+            $success = Invoke-FinetuneStage
+        }
+        "inference" {
+            $success = Invoke-InferenceStage
+        }
+        "download" {
+            $success = Invoke-DownloadStage
         }
         "all" {
             $success = (Invoke-PreprocessStage) -and 
