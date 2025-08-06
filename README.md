@@ -123,14 +123,6 @@ Perfect for first-time users! No technical background required.
 ├── quantize_model.py  # ✅ Model quantization CLI
 └── requirements.txt   # ✅ Python dependencies
 ```
-├── exports/
-│   ├── checkpoints/   # Model checkpoints
-│   ├── gguf/         # GGUF exports (future)
-│   └── onnx/         # ONNX exports (future)
-├── tokenizer/         # Trained tokenizer files
-├── logs/             # Training and evaluation logs
-└── run.sh            # Main pipeline script
-```
 
 ## 🚀 Quick Start
 
