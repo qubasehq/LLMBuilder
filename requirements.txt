@@ -1,0 +1,10 @@
+# TODO: Pin dependencies here
+transformers
+torch
+tokenizers
+sentencepiece
+pandas
+tqdm
+pyyaml
+fitz  # PyMuPDF
+docx2txt
