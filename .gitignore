@@ -1,7 +1,11 @@
-# Data directories - exclude all content
+# Data directories - exclude all data
 data/raw/**/*
 !data/raw/
 !data/raw/.gitkeep
+
+data/finetune/**/*
+!data/finetune/
+!data/finetune/.gitkeep
 
 # Specific content folders to exclude (add more as needed)
 data/raw/*/content/
@@ -20,6 +24,25 @@ models/
 checkpoints/
 outputs/
 logs/
+
+# Exports directory (models, checkpoints, tokenizers, etc)
+exports/**/*
+!exports/
+!exports/.gitkeep
+
+# Model formats
+*.pt
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+*.onnx_data
+*.pth
+*.h5
+*.tflite
+*.pb
+*.pkl
+*.joblib
 
 # Python
 __pycache__/
@@ -80,3 +103,31 @@ Thumbs.db
 # Hugging Face cache
 .cache/
 .huggingface/
+
+# Tokenizer files
+tokenizer/
+*.model
+*.vocab
+*.json
+
+# Training artifacts
+training_artifacts/
+wandb/
+mlruns/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# System Files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Local development
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
