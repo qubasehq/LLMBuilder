@@ -16,7 +16,7 @@ data/raw/*/*/content/**/*
 # Other data directories
 data/processed/
 data/cleaned/
-data/tokenized/
+data/tokens/
 data/vocab/
 
 # Model checkpoints and outputs
@@ -29,6 +29,7 @@ logs/
 exports/**/*
 !exports/
 !exports/.gitkeep
+
 
 # Model formats
 *.pt
