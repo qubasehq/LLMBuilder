@@ -382,76 +382,242 @@ class DataPreprocessor:
         logger.info(f"Found {len(files)} files to process")
         return sorted(files)
     
-    def process_all(self) -> Dict[str, Any]:
-        """Process all files in the raw data directory."""
-        logger.info("Starting data preprocessing...")
-        
-        files = self.find_files()
-        
-        if not files:
-            logger.warning("No files found to process")
-            return {
-                'processed': 0,
-                'failed': 0,
-                'total_chars': 0,
-                'output_files': []
-            }
-        
-        processed_count = 0
-        failed_count = 0
-        total_chars = 0
-        output_files = []
+    def get_unprocessed_files(self, files: List[Path]) -> List[Path]:
+        """Filter out files that have already been processed."""
+        unprocessed = []
+        skipped = 0
         
         for file_path in files:
-            try:
-                # Process file
-                cleaned_text = self.processor.process_file(file_path)
-                
-                if cleaned_text is None:
-                    failed_count += 1
-                    continue
-                
-                # Save cleaned text
-                output_filename = f"{file_path.stem}_cleaned.txt"
-                output_path = self.cleaned_data_dir / output_filename
-                
-                with open(output_path, 'w', encoding='utf-8') as f:
-                    f.write(cleaned_text)
-                
-                processed_count += 1
-                total_chars += len(cleaned_text)
-                output_files.append(output_path)
-                
-                logger.info(f"Saved cleaned text to {output_path}")
-                
-            except Exception as e:
-                logger.error(f"Error processing {file_path}: {e}")
-                failed_count += 1
-                continue
-        
-        # Create combined file
-        if output_files:
-            combined_path = self.cleaned_data_dir / "combined_text.txt"
-            with open(combined_path, 'w', encoding='utf-8') as combined_file:
-                for output_file in output_files:
-                    with open(output_file, 'r', encoding='utf-8') as f:
-                        combined_file.write(f.read())
-                        combined_file.write("\n\n")  # Separator between documents
+            output_file = self.cleaned_data_dir / f"{file_path.stem}_cleaned.txt"
             
-            logger.info(f"Created combined file: {combined_path}")
-            output_files.append(combined_path)
+            # Check if output file exists and is newer than source
+            if output_file.exists():
+                try:
+                    source_mtime = file_path.stat().st_mtime
+                    output_mtime = output_file.stat().st_mtime
+                    
+                    if output_mtime >= source_mtime:
+                        # File already processed and up to date
+                        skipped += 1
+                        logger.debug(f"Skipping {file_path.name} (already processed)")
+                        continue
+                    else:
+                        logger.debug(f"Processing {file_path.name} (source newer than output)")
+                except OSError as e:
+                    # If we can't check timestamps, process the file
+                    logger.debug(f"Cannot check timestamps for {file_path.name}: {e}")
+                    pass
+            else:
+                logger.debug(f"Processing {file_path.name} (no output file)")
+            
+            unprocessed.append(file_path)
         
-        results = {
-            'processed': processed_count,
-            'failed': failed_count,
-            'total_chars': total_chars,
-            'output_files': output_files
-        }
+        logger.info(f"File filtering: {skipped} already processed, {len(unprocessed)} need processing")
         
-        logger.info(f"Preprocessing complete: {processed_count} processed, {failed_count} failed")
-        logger.info(f"Total characters: {total_chars:,}")
+        # Debug: Show first few files and their status
+        if len(files) > 0:
+            sample_file = files[0]
+            output_file = self.cleaned_data_dir / f"{sample_file.stem}_cleaned.txt"
+            logger.info(f"Debug sample - Source: {sample_file}")
+            logger.info(f"Debug sample - Output: {output_file}")
+            logger.info(f"Debug sample - Output exists: {output_file.exists()}")
+            if output_file.exists():
+                source_mtime = sample_file.stat().st_mtime
+                output_mtime = output_file.stat().st_mtime
+                logger.info(f"Debug sample - Source mtime: {source_mtime}")
+                logger.info(f"Debug sample - Output mtime: {output_mtime}")
+                logger.info(f"Debug sample - Output newer: {output_mtime >= source_mtime}")
+        return unprocessed
+    
+    def process_all(self) -> Dict[str, Any]:
+        """Process all files in the raw data directory."""
+        from tqdm import tqdm
+        import traceback
         
-        return results
+        logger.info("Starting data preprocessing...")
+        logger.info(f"Looking for files in: {self.raw_data_dir.absolute()}")
+        
+        try:
+            all_files = self.find_files()
+            logger.info(f"Found {len(all_files)} total files")
+            
+            # Filter out already processed files
+            files = self.get_unprocessed_files(all_files)
+            already_processed = len(all_files) - len(files)
+            
+            if already_processed > 0:
+                logger.info(f"Skipping {already_processed} already processed files")
+            
+            if not files:
+                logger.info("All files are already processed and up to date - skipping processing")
+                # Count existing output files
+                existing_files = list(self.cleaned_data_dir.glob("*_cleaned.txt"))
+                total_chars = 0
+                for existing_file in existing_files:
+                    try:
+                        with open(existing_file, 'r', encoding='utf-8') as f:
+                            total_chars += len(f.read())
+                    except:
+                        pass
+                
+                # Ensure combined file exists
+                combined_path = self.cleaned_data_dir / "combined_text.txt"
+                if not combined_path.exists() and existing_files:
+                    logger.info("Creating combined file from existing cleaned files")
+                    try:
+                        with open(combined_path, 'w', encoding='utf-8') as combined_file:
+                            for cleaned_file in sorted(existing_files):
+                                try:
+                                    with open(cleaned_file, 'r', encoding='utf-8') as f:
+                                        content = f.read().strip()
+                                        if content:
+                                            combined_file.write(content)
+                                            combined_file.write("\n\n")
+                                except Exception as e:
+                                    logger.warning(f"Failed to read {cleaned_file}: {e}")
+                                    continue
+                        logger.info(f"Combined file created: {combined_path}")
+                    except Exception as e:
+                        logger.error(f"Failed to create combined file: {e}")
+                
+                # Include combined file in output list
+                all_output_files = [str(f.absolute()) for f in existing_files]
+                if combined_path.exists():
+                    all_output_files.append(str(combined_path.absolute()))
+                
+                logger.info(f"Preprocessing complete: {len(existing_files)} files already processed, {total_chars:,} total characters")
+                return {
+                    'processed': len(existing_files),
+                    'failed': 0,
+                    'total_chars': total_chars,
+                    'output_files': all_output_files
+                }
+            
+            logger.info(f"Processing {len(files)} new/modified files")
+        
+            processed_count = 0
+            failed_count = 0
+            total_chars = 0
+            output_files = []
+            
+            # Store the count of already processed files for final reporting
+            already_processed_count = already_processed
+            
+            # Initialize tqdm progress bar
+            progress_bar = tqdm(
+                files, 
+                desc="Processing files", 
+                unit="file",
+                bar_format='{l_bar}{bar:50}{r_bar}{bar:-10b}',
+                colour='green'
+            )
+            
+            for file_path in progress_bar:
+                try:
+                    # Process file
+                    progress_bar.set_postfix(file=file_path.name[:20] + '...' if len(file_path.name) > 20 else file_path.name)
+                    logger.debug(f"Processing file: {file_path}")
+                    
+                    cleaned_text = self.processor.process_file(file_path)
+                    
+                    if cleaned_text:
+                        # Ensure output directory exists
+                        self.cleaned_data_dir.mkdir(parents=True, exist_ok=True)
+                        
+                        # Save cleaned text to file
+                        output_file = self.cleaned_data_dir / f"{file_path.stem}_cleaned.txt"
+                        try:
+                            with open(output_file, 'w', encoding='utf-8') as f:
+                                f.write(cleaned_text)
+                            
+                            processed_count += 1
+                            total_chars += len(cleaned_text)
+                            output_files.append(str(output_file.absolute()))
+                            progress_bar.write(f"[DONE] Processed: {file_path.name} -> {len(cleaned_text):,} chars")
+                        except Exception as write_error:
+                            failed_count += 1
+                            progress_bar.write(f"[FAIL] Failed to write {file_path.name}: {str(write_error)}")
+                            logger.error(f"Error writing {output_file}: {traceback.format_exc()}")
+                    else:
+                        failed_count += 1
+                        progress_bar.write(f"[SKIP] No content extracted from: {file_path.name}")
+                
+                except Exception as e:
+                    failed_count += 1
+                    error_msg = f"✗ Error processing {file_path.name}: {str(e)}"
+                    # Remove any non-ASCII characters from error message
+                    safe_error_msg = error_msg.encode('ascii', 'replace').decode('ascii')
+                    progress_bar.write(safe_error_msg)
+                    logger.error(f"Error processing {file_path}: {traceback.format_exc()}")
+        
+            # Always ensure combined file exists with all cleaned files
+            combined_path = self.cleaned_data_dir / "combined_text.txt"
+            all_cleaned_files = list(self.cleaned_data_dir.glob("*_cleaned.txt"))
+            
+            if all_cleaned_files:
+                try:
+                    logger.info(f"Creating/updating combined file from {len(all_cleaned_files)} cleaned files")
+                    with open(combined_path, 'w', encoding='utf-8') as combined_file:
+                        for cleaned_file in sorted(all_cleaned_files):
+                            try:
+                                with open(cleaned_file, 'r', encoding='utf-8') as f:
+                                    content = f.read().strip()
+                                    if content:  # Only write non-empty content
+                                        combined_file.write(content)
+                                        combined_file.write("\n\n")  # Separator between documents
+                            except Exception as e:
+                                logger.warning(f"Failed to read {cleaned_file} for combining: {e}")
+                                continue
+                    
+                    # Verify the combined file has content
+                    if combined_path.exists() and combined_path.stat().st_size > 0:
+                        logger.info(f"Combined file ready: {combined_path} ({combined_path.stat().st_size:,} bytes)")
+                    else:
+                        logger.warning("Combined file is empty")
+                        
+                except Exception as e:
+                    logger.error(f"Failed to create combined file: {e}")
+                    logger.error(traceback.format_exc())
+            
+            # Include already processed files in the final count
+            all_output_files = list(self.cleaned_data_dir.glob("*_cleaned.txt"))
+            if self.cleaned_data_dir.joinpath("combined_text.txt").exists():
+                all_output_files.append(self.cleaned_data_dir / "combined_text.txt")
+            
+            # Calculate total characters from all files
+            total_all_chars = 0
+            for output_file in all_output_files:
+                try:
+                    with open(output_file, 'r', encoding='utf-8') as f:
+                        total_all_chars += len(f.read())
+                except:
+                    pass
+            
+            results = {
+                'processed': processed_count + already_processed_count,
+                'failed': failed_count,
+                'total_chars': total_all_chars,
+                'output_files': [str(f.absolute()) for f in all_output_files]
+            }
+            
+            if processed_count > 0:
+                logger.info(f"Preprocessing complete: {processed_count} newly processed, {already_processed_count} already up-to-date, {failed_count} failed")
+            else:
+                logger.info(f"All {already_processed_count} files were already up-to-date")
+            logger.info(f"Total characters: {total_all_chars:,}")
+            
+            # Only raise error if we had files to process but none succeeded and some failed
+            if processed_count == 0 and failed_count > 0 and files and already_processed_count == 0:
+                error_msg = "No files were successfully processed. Check the logs for details."
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)
+                
+            return results
+            
+        except Exception as e:
+            logger.error(f"Fatal error in preprocessing: {e}")
+            logger.error(traceback.format_exc())
+            raise
 
 
 def main():

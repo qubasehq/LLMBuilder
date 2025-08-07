@@ -14,3 +14,250 @@
 [2025-08-07 00:54:43] [WARNING] No files found in D:\LLM\project\data\raw
 [2025-08-07 00:54:43] [INFO] Please add your training data (PDF/DOCX/TXT) to D:\LLM\project\data\raw
 [2025-08-07 00:54:43] [ERROR] Pipeline failed after 00:00:00
+[2025-08-07 22:07:28] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:07:29] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:07:29] [INFO] Python version: 3.12.6
+[2025-08-07 22:07:29] [INFO] Stage: all
+[2025-08-07 22:07:29] [INFO] Config: config.json
+[2025-08-07 22:07:29] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:07:29] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:07:29] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 22:07:29] [ERROR] Pipeline failed after 00:00:00
+[2025-08-07 22:16:36] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:16:36] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:16:36] [INFO] Python version: 3.12.6
+[2025-08-07 22:16:36] [INFO] Stage: all
+[2025-08-07 22:16:36] [INFO] Config: config.json
+[2025-08-07 22:16:36] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:16:36] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:21:13] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:21:13] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:21:13] [INFO] Python version: 3.12.6
+[2025-08-07 22:21:13] [INFO] Stage: all
+[2025-08-07 22:21:13] [INFO] Config: config.json
+[2025-08-07 22:21:13] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:21:13] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:21:18] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 22:21:18] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 22:21:18] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 22:21:23] [ERROR] Tokenizer training failed: Command exited with code 1
+[2025-08-07 22:21:23] [INFO] === Starting Model Training ===
+[2025-08-07 22:21:23] [ERROR] Tokenizer not found in D:\LLM\project\exports\tokenizer
+[2025-08-07 22:21:23] [ERROR] Pipeline failed after 00:00:10
+[2025-08-07 22:24:49] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:24:49] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:24:49] [INFO] Python version: 3.12.6
+[2025-08-07 22:24:49] [INFO] Stage: all
+[2025-08-07 22:24:49] [INFO] Config: config.json
+[2025-08-07 22:24:49] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:24:49] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:24:49] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 22:24:49] [ERROR] Pipeline failed after 00:00:00
+[2025-08-07 22:26:15] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:26:15] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:26:15] [INFO] Python version: 3.12.6
+[2025-08-07 22:26:15] [INFO] Stage: all
+[2025-08-07 22:26:15] [INFO] Config: config.json
+[2025-08-07 22:26:15] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:26:15] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:26:15] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 22:26:15] [ERROR] Pipeline failed after 00:00:00
+[2025-08-07 22:26:44] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:26:44] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:26:44] [INFO] Python version: 3.12.6
+[2025-08-07 22:26:44] [INFO] Stage: all
+[2025-08-07 22:26:44] [INFO] Config: config.json
+[2025-08-07 22:26:44] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:26:44] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:26:44] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 22:26:44] [ERROR] Pipeline failed after 00:00:00
+[2025-08-07 22:27:17] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:27:17] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:27:17] [INFO] Python version: 3.12.6
+[2025-08-07 22:27:17] [INFO] Stage: all
+[2025-08-07 22:27:17] [INFO] Config: config.json
+[2025-08-07 22:27:17] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:27:17] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:27:17] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 22:27:17] [ERROR] Pipeline failed after 00:00:00
+[2025-08-07 22:28:22] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:28:22] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:28:22] [INFO] Python version: 3.12.6
+[2025-08-07 22:28:22] [INFO] Stage: all
+[2025-08-07 22:28:22] [INFO] Config: config.json
+[2025-08-07 22:28:22] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:28:22] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:28:22] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 22:28:22] [ERROR] Pipeline failed after 00:00:00
+[2025-08-07 22:29:32] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:29:32] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:29:32] [INFO] Python version: 3.12.6
+[2025-08-07 22:29:32] [INFO] Stage: all
+[2025-08-07 22:29:32] [INFO] Config: config.json
+[2025-08-07 22:29:32] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:29:32] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:29:38] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 22:29:38] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 22:29:38] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 22:29:43] [ERROR] Tokenizer training failed: Command exited with code 1
+[2025-08-07 22:29:43] [INFO] === Starting Model Training ===
+[2025-08-07 22:29:43] [ERROR] Tokenizer not found in D:\LLM\project\exports\tokenizer
+[2025-08-07 22:29:43] [ERROR] Pipeline failed after 00:00:11
+[2025-08-07 22:32:48] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:32:48] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:32:48] [INFO] Python version: 3.12.6
+[2025-08-07 22:32:48] [INFO] Stage: all
+[2025-08-07 22:32:48] [INFO] Config: config.json
+[2025-08-07 22:32:48] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:32:48] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:35:06] [SUCCESS] Preprocessing completed successfully
+[2025-08-07 22:35:06] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 22:35:06] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 22:35:39] [SUCCESS] Tokenizer training completed successfully
+[2025-08-07 22:35:39] [INFO] === Starting Model Training ===
+[2025-08-07 22:35:39] [ERROR] Tokenizer not found in D:\LLM\project\exports\tokenizer
+[2025-08-07 22:35:39] [ERROR] Pipeline failed after 00:02:50
+[2025-08-07 22:55:09] [INFO] Using Python version: 3.12.6
+[2025-08-07 22:55:09] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 22:55:09] [INFO] Python version: 3.12.6
+[2025-08-07 22:55:09] [INFO] Stage: all
+[2025-08-07 22:55:09] [INFO] Config: config.json
+[2025-08-07 22:55:09] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 22:55:09] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 22:56:31] [SUCCESS] Preprocessing completed successfully
+[2025-08-07 22:56:31] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 22:56:31] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 22:57:00] [SUCCESS] Tokenizer training completed successfully
+[2025-08-07 22:57:00] [INFO] === Starting Model Training ===
+[2025-08-07 22:57:00] [INFO] Executing: python training/train.py --config config.json --tokenizer-dir D:\LLM\project\exports\tokenizer --checkpoint-dir D:\LLM\project\exports\checkpoints
+[2025-08-07 22:57:05] [ERROR] Training failed: Command exited with code 1
+[2025-08-07 22:57:05] [INFO] === Starting Model Evaluation ===
+[2025-08-07 22:57:05] [ERROR] No model checkpoints found in D:\LLM\project\exports\checkpoints
+[2025-08-07 22:57:05] [ERROR] Pipeline failed after 00:01:55
+[2025-08-07 23:12:33] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:12:33] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:12:33] [INFO] Python version: 3.12.6
+[2025-08-07 23:12:33] [INFO] Stage: all
+[2025-08-07 23:12:33] [INFO] Config: config.json
+[2025-08-07 23:12:33] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:12:33] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:15:20] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:15:20] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:15:20] [INFO] Python version: 3.12.6
+[2025-08-07 23:15:20] [INFO] Stage: all
+[2025-08-07 23:15:20] [INFO] Config: config.json
+[2025-08-07 23:15:20] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:15:20] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:15:33] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 23:15:33] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 23:15:33] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 23:16:03] [SUCCESS] Tokenizer training completed successfully
+[2025-08-07 23:16:03] [INFO] === Starting Model Training ===
+[2025-08-07 23:16:03] [INFO] Executing: python training/train.py --config config.json --tokenizer-dir D:\LLM\project\exports\tokenizer --checkpoint-dir D:\LLM\project\exports\checkpoints
+[2025-08-07 23:16:07] [ERROR] Training failed: Command exited with code 1
+[2025-08-07 23:16:07] [ERROR] Pipeline failed after 00:00:47
+[2025-08-07 23:18:22] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:18:22] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:18:22] [INFO] Python version: 3.12.6
+[2025-08-07 23:18:22] [INFO] Stage: all
+[2025-08-07 23:18:22] [INFO] Config: config.json
+[2025-08-07 23:18:22] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:18:22] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:18:34] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 23:18:34] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 23:18:34] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 23:21:41] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:21:41] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:21:41] [INFO] Python version: 3.12.6
+[2025-08-07 23:21:41] [INFO] Stage: all
+[2025-08-07 23:21:41] [INFO] Config: config.json
+[2025-08-07 23:21:41] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:21:41] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:21:56] [ERROR] Preprocessing failed: Command exited with code 1
+[2025-08-07 23:21:56] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 23:21:56] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 23:22:30] [SUCCESS] Tokenizer training completed successfully
+[2025-08-07 23:22:30] [INFO] === Starting Model Training ===
+[2025-08-07 23:22:30] [INFO] Executing: python training/train.py --config config.json --tokenizer-dir D:\LLM\project\exports\tokenizer --checkpoint-dir D:\LLM\project\exports\checkpoints
+[2025-08-07 23:27:22] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:27:22] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:27:22] [INFO] Python version: 3.12.6
+[2025-08-07 23:27:22] [INFO] Stage: all
+[2025-08-07 23:27:22] [INFO] Config: config.json
+[2025-08-07 23:27:22] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:27:22] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:27:51] [SUCCESS] Preprocessing completed successfully
+[2025-08-07 23:27:51] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 23:27:51] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 23:28:18] [SUCCESS] Tokenizer training completed successfully
+[2025-08-07 23:28:18] [INFO] === Starting Model Training ===
+[2025-08-07 23:28:18] [INFO] Executing: python training/train.py --config config.json --tokenizer-dir D:\LLM\project\exports\tokenizer --checkpoint-dir D:\LLM\project\exports\checkpoints
+[2025-08-07 23:36:20] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:36:20] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:36:20] [INFO] Python version: 3.12.6
+[2025-08-07 23:36:20] [INFO] Stage: all
+[2025-08-07 23:36:20] [INFO] Config: config.json
+[2025-08-07 23:36:20] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:36:36] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:36:36] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:36:36] [INFO] Python version: 3.12.6
+[2025-08-07 23:36:36] [INFO] Stage: all
+[2025-08-07 23:36:36] [INFO] Config: config.json
+[2025-08-07 23:36:36] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:36:36] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:37:06] [SUCCESS] Preprocessing completed successfully
+[2025-08-07 23:37:06] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 23:37:06] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 23:37:06] [ERROR] Tokenizer training failed: Command exited with code 1
+[2025-08-07 23:37:06] [ERROR] Pipeline failed after 00:00:29
+[2025-08-07 23:38:02] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:38:02] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:38:02] [INFO] Python version: 3.12.6
+[2025-08-07 23:38:02] [INFO] Stage: all
+[2025-08-07 23:38:02] [INFO] Config: config.json
+[2025-08-07 23:38:02] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:38:02] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:38:16] [SUCCESS] Preprocessing completed successfully
+[2025-08-07 23:38:16] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 23:38:16] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 23:38:20] [ERROR] Tokenizer training failed: Command exited with code 1
+[2025-08-07 23:38:20] [INFO] === Starting Model Training ===
+[2025-08-07 23:38:20] [INFO] Executing: python training/train.py --config config.json --tokenizer-dir D:\LLM\project\exports\tokenizer --checkpoint-dir D:\LLM\project\exports\checkpoints
+[2025-08-07 23:38:31] [ERROR] Training failed: Command exited with code 1
+[2025-08-07 23:38:31] [INFO] === Starting Model Evaluation ===
+[2025-08-07 23:38:31] [ERROR] No model checkpoints found in D:\LLM\project\exports\checkpoints
+[2025-08-07 23:38:31] [ERROR] Pipeline failed after 00:00:29
+[2025-08-07 23:41:43] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:41:43] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:41:43] [INFO] Python version: 3.12.6
+[2025-08-07 23:41:43] [INFO] Stage: all
+[2025-08-07 23:41:43] [INFO] Config: config.json
+[2025-08-07 23:41:43] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:41:43] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:41:56] [SUCCESS] Preprocessing completed successfully
+[2025-08-07 23:41:56] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 23:41:56] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 23:42:23] [SUCCESS] Tokenizer training completed successfully
+[2025-08-07 23:42:23] [INFO] === Starting Model Training ===
+[2025-08-07 23:42:23] [INFO] Executing: python training/train.py --config config.json --tokenizer-dir D:\LLM\project\exports\tokenizer --checkpoint-dir D:\LLM\project\exports\checkpoints
+[2025-08-07 23:42:32] [ERROR] Training failed: Command exited with code 1
+[2025-08-07 23:42:32] [INFO] === Starting Model Evaluation ===
+[2025-08-07 23:42:32] [ERROR] No model checkpoints found in D:\LLM\project\exports\checkpoints
+[2025-08-07 23:42:32] [ERROR] Pipeline failed after 00:00:49
+[2025-08-07 23:44:06] [INFO] Using Python version: 3.12.6
+[2025-08-07 23:44:06] [INFO] Starting LLM Training Pipeline (v1.0.0)
+[2025-08-07 23:44:06] [INFO] Python version: 3.12.6
+[2025-08-07 23:44:06] [INFO] Stage: all
+[2025-08-07 23:44:06] [INFO] Config: config.json
+[2025-08-07 23:44:06] [INFO] === Starting Data Preprocessing ===
+[2025-08-07 23:44:06] [INFO] Executing: python training/preprocess.py --config config.json --input-dir D:\LLM\project\data\raw --output-dir D:\LLM\project\data\cleaned
+[2025-08-07 23:44:20] [SUCCESS] Preprocessing completed successfully
+[2025-08-07 23:44:20] [INFO] === Starting Tokenizer Training ===
+[2025-08-07 23:44:20] [INFO] Executing: python training/train_tokenizer.py --config config.json --input-dir D:\LLM\project\data\cleaned --output-dir D:\LLM\project\exports\tokenizer
+[2025-08-07 23:44:47] [SUCCESS] Tokenizer training completed successfully
+[2025-08-07 23:44:47] [INFO] === Starting Model Training ===
+[2025-08-07 23:44:47] [INFO] Executing: python training/train.py --config config.json --tokenizer-dir D:\LLM\project\exports\tokenizer --checkpoint-dir D:\LLM\project\exports\checkpoints
+[2025-08-07 23:44:57] [ERROR] Training failed: Command exited with code 1
+[2025-08-07 23:44:57] [INFO] === Starting Model Evaluation ===
+[2025-08-07 23:44:57] [ERROR] No model checkpoints found in D:\LLM\project\exports\checkpoints
+[2025-08-07 23:44:57] [ERROR] Pipeline failed after 00:00:50

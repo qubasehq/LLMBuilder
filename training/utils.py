@@ -19,7 +19,7 @@ class ConfigManager:
     
     @staticmethod
     def load_config(config_path: Union[str, Path]) -> Dict[str, Any]:
-        """Load and validate configuration from YAML file.
+        """Load and validate configuration from YAML or JSON file.
         
         Args:
             config_path: Path to configuration file
@@ -29,7 +29,7 @@ class ConfigManager:
             
         Raises:
             FileNotFoundError: If config file doesn't exist
-            yaml.YAMLError: If config file is malformed
+            ValueError: If config file is malformed or missing required sections
         """
         config_path = Path(config_path)
         
@@ -38,7 +38,37 @@ class ConfigManager:
             
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
+                if config_path.suffix.lower() == '.json':
+                    config = json.load(f)
+                else:
+                    config = yaml.safe_load(f)
+            
+            # Convert JSON format to expected YAML format if needed
+            if 'training' in config and 'train' not in config:
+                # Map JSON training section to train section
+                training_config = config['training']
+                config['train'] = {
+                    'learning_rate': training_config.get('learning_rate', 0.0003),
+                    'batch_size': training_config.get('batch_size', 16),
+                    'max_iters': training_config.get('num_epochs', 10) * 1000,  # Rough conversion
+                    'eval_interval': training_config.get('eval_every', 1000),
+                    'eval_iters': training_config.get('eval_every', 100),
+                    'log_interval': training_config.get('log_every', 100),
+                    'device': config.get('device', {}).get('use_cuda', False) and 'cuda' or 'cpu'
+                }
+            
+            # Ensure model section has required fields with defaults
+            if 'model' in config:
+                model_config = config['model']
+                # Map JSON model fields to expected YAML fields
+                if 'num_layers' in model_config and 'n_layer' not in model_config:
+                    model_config['n_layer'] = model_config['num_layers']
+                if 'num_heads' in model_config and 'n_head' not in model_config:
+                    model_config['n_head'] = model_config['num_heads']
+                if 'embedding_dim' in model_config and 'n_embd' not in model_config:
+                    model_config['n_embd'] = model_config['embedding_dim']
+                if 'max_seq_length' in model_config and 'block_size' not in model_config:
+                    model_config['block_size'] = model_config['max_seq_length']
             
             # Validate required sections
             required_sections = ['model', 'train']
@@ -49,6 +79,9 @@ class ConfigManager:
             logger.info(f"Configuration loaded successfully from {config_path}")
             return config
             
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parsing JSON config: {e}")
+            raise
         except yaml.YAMLError as e:
             logger.error(f"Error parsing YAML config: {e}")
             raise
@@ -217,26 +250,39 @@ def setup_logging(log_dir: Union[str, Path] = "logs", level: str = "INFO"):
         log_dir: Directory for log files
         level: Logging level
     """
+    import sys
+    
     log_dir = Path(log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
     
     # Remove default logger
     logger.remove()
     
-    # Add console logger
+    # Add console logger with proper Unicode handling
+    def safe_console_write(msg):
+        """Safely write to console with Unicode support."""
+        try:
+            # Try to print normally first
+            print(msg, end="")
+        except UnicodeEncodeError:
+            # If that fails, encode to ASCII with replacement characters
+            safe_msg = msg.encode('ascii', errors='replace').decode('ascii')
+            print(safe_msg, end="")
+    
     logger.add(
-        lambda msg: print(msg, end=""),
+        safe_console_write,
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | {message}",
         level=level
     )
     
-    # Add file logger
+    # Add file logger (files can handle UTF-8 properly)
     logger.add(
         log_dir / "training.log",
         format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}",
         level=level,
         rotation="10 MB",
-        retention="7 days"
+        retention="7 days",
+        encoding="utf-8"
     )
     
     logger.info("Logging setup complete")

@@ -1,0 +1,101 @@
+{
+  "model": {
+    "vocab_size": 8000,
+    "embedding_dim": 256,
+    "num_layers": 4,
+    "num_heads": 4,
+    "hidden_dim": 1024,
+    "max_seq_length": 128,
+    "dropout": 0.1,
+    "use_bias": true,
+    "tie_weights": true
+  },
+  "training": {
+    "batch_size": 2,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.01,
+    "num_epochs": 3,
+    "warmup_steps": 100,
+    "gradient_clip_norm": 1.0,
+    "save_every": 100,
+    "eval_every": 50,
+    "log_every": 5,
+    "num_workers": 2,
+    "pin_memory": false,
+    "prefetch_factor": 1,
+    "use_mixed_precision": false,
+    "max_samples": 500
+  },
+  "tokenizer": {
+    "vocab_size": 8000,
+    "model_type": "bpe",
+    "character_coverage": 0.9995,
+    "input_sentence_size": 1000000,
+    "shuffle_input_sentence": true,
+    "normalization_rule_name": "nmt_nfkc_cf",
+    "remove_extra_whitespaces": true,
+    "add_dummy_prefix": true,
+    "eos_id": 1,
+    "unk_id": 0,
+    "bos_id": 2,
+    "pad_id": 3
+  },
+  "preprocessing": {
+    "min_length": 5,
+    "max_length": 2048,
+    "remove_duplicates": true,
+    "normalize_whitespace": true,
+    "remove_empty_lines": true,
+    "encoding": "utf-8",
+    "chunk_size": 100000,
+    "supported_formats": ["txt", "md"],
+    "max_samples": 500
+  },
+  "evaluation": {
+    "batch_size": 1,
+    "max_new_tokens": 50,
+    "temperature": 0.7,
+    "top_k": 20,
+    "top_p": 0.9,
+    "do_sample": true,
+    "num_return_sequences": 1,
+    "benchmark_iterations": 10,
+    "perplexity_stride": 64
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} - {message}",
+    "rotation": "5 MB",
+    "retention": "3 days",
+    "compression": "gz",
+    "colorize": true
+  },
+  "paths": {
+    "data_dir": "data",
+    "raw_data_dir": "data/raw",
+    "cleaned_data_dir": "data/cleaned",
+    "tokenized_data_dir": "data/tokens",
+    "tokenizer_dir": "exports/tokenizer",
+    "checkpoint_dir": "exports/checkpoints",
+    "log_dir": "logs",
+    "export_dir": "exports"
+  },
+  "device": {
+    "use_cuda": false,
+    "cuda_device": 0,
+    "use_mps": false,
+    "cpu_threads": 1,
+    "enable_mkldnn": true,
+    "mixed_precision": false
+  },
+  "optimization": {
+    "optimizer": "adamw",
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "eps": 1e-8,
+    "scheduler": "linear",
+    "min_lr": 1e-5,
+    "warmup_ratio": 0.1,
+    "gradient_clip_val": 1.0
+  }
+}

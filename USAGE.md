@@ -2,6 +2,29 @@
 
 **Welcome to your step-by-step journey with LLMBuilder by Qubasehq - from raw data to a working AI!** No technical background needed - we'll explain everything as we go!
 
+## 📑 Table of Contents
+
+### 🚀 Getting Started
+- [Quick Start](#-quick-start-30-seconds)
+- [System Requirements](#-system-requirements)
+- [Installation](#-installation)
+
+### 🔄 Training Pipeline
+1. [Data Preparation](#-step-1-data-preparation)
+2. [Tokenizer Training](#-step-2-tokenizer-training)
+3. [Model Training](#-step-3-model-training)
+4. [Model Evaluation](#-step-4-model-evaluation)
+5. [Fine-tuning](#-step-5-fine-tuning)
+6. [Inference](#-step-6-interactive-inference)
+
+### 🛠️ Advanced Usage
+- [Large Dataset Handling](#-handling-large-datasets-5-10gb)
+- [Configuration Guide](#-configuration-guide)
+- [Troubleshooting](#-troubleshooting)
+- [Performance Tuning](#-performance-optimization)
+
+---
+
 **What you'll achieve:**
 - ✅ Turn 10 PDF/TXT/DOCX files into a working AI
 - ✅ Train a 50-million parameter model
@@ -686,28 +709,100 @@ Generated: "The future of AI is bright and full of possibilities..."
 ---
 
 ### **Step 5: Fine-tuning**
-**Command**:
+
+#### **📌 Before You Start**
+1. **Prepare Your Data**
+   - Place files in `data/finetune/` (supports `.txt`, `.md`)
+   - Each line should be a complete training example
+   - Recommended: 100-1000 high-quality examples
+
+   ```
+   data/finetune/
+   ├── my_data1.txt
+   ├── my_data2.txt
+   └── more_data.txt
+   ```
+
+2. **Verify Model Availability**
+   - Check available models: `ls -l exports/checkpoints/`
+   - Ensure you have a pre-trained model (`.pt` file)
+
+#### **🛠️ How to Run**
+
+**Option 1: Using run script (Recommended)**
 ```bash
+# Uses latest checkpoint automatically
 ./run.sh finetune
 ```
 
-**Setup First**: Place fine-tuning data in `data/finetune/`:
-```
-data/finetune/
-├── custom_data.txt
-├── domain_specific.txt
-└── personal_writing.txt
+**Option 2: Manual Command**
+```bash
+python finetune/finetune.py \
+  --config config.json \
+  --pretrained-model exports/checkpoints/latest.pt \
+  --train-data data/finetune/ \
+  --tokenizer-dir exports/tokenizer/ \
+  --batch-size 4 \
+  --learning-rate 0.0001
 ```
 
-**What Happens:**
-- **Input**: Pre-trained model + fine-tuning data
-- **Process**: Continues training on new data
-- **Output**: `exports/checkpoints/finetuned/best_model.pt`
+#### **⚙️ Key Parameters**
+| Parameter | Description | Recommended |
+|-----------|-------------|-------------|
+| `--pretrained-model` | Path to pre-trained model | Required |
+| `--train-data` | Directory with training files | `data/finetune/` |
+| `--batch-size` | Number of samples per batch | 2-8 (GPU), 1-4 (CPU) |
+| `--learning-rate` | Learning rate for fine-tuning | 0.00001 - 0.0001 |
+| `--num-epochs` | Training epochs | 3-10 |
+| `--max-length` | Max sequence length | 256-1024 |
 
-**Expected Output:**
+#### **📊 Expected Output**
 ```
 === Starting Fine-tuning ===
-[INFO] Loading pre-trained model...
+[INFO] Loading pre-trained model: exports/checkpoints/model_epoch_10.pt
+[INFO] Using tokenizer from: exports/tokenizer
+[INFO] Found 42 training files in data/finetune/
+[INFO] Training on 1,250 examples
+[INFO] Using batch size: 4, learning rate: 0.0001
+Epoch 1/5 - Loss: 2.345 → 1.876
+Epoch 2/5 - Loss: 1.876 → 1.543
+...
+[SUCCESS] Fine-tuned model saved to: 
+  - exports/checkpoints/finetuned/model_final.pt
+  - exports/checkpoints/finetuned/config.json
+```
+
+#### **🔍 Monitoring Progress**
+- **Logs**: Check `logs/finetune.log`
+- **TensorBoard**: `tensorboard --logdir=exports/logs/finetune`
+- **Output Directory**: `exports/checkpoints/finetuned/`
+
+#### **💡 Pro Tips**
+- Start with a small learning rate (1/10th of training LR)
+- Use smaller batch sizes if you get OOM errors
+- Fine-tune for fewer epochs (3-5) to avoid overfitting
+- Monitor loss - it should decrease steadily
+
+#### **⚠️ Troubleshooting**
+| Issue | Solution |
+|-------|----------|
+| "CUDA out of memory" | Reduce batch size |
+| "No checkpoints found" | Train a model first |
+| "No training data" | Check `data/finetune/` |
+| Loss not decreasing | Try lower learning rate |
+
+#### **📂 Output Files**
+```
+exports/checkpoints/finetuned/
+├── model_final.pt      # Fine-tuned model
+├── config.json         # Training configuration
+└── training_args.bin   # Training arguments
+```
+
+#### **▶️ Next Steps**
+- [Evaluate](#-step-4-model-evaluation) your fine-tuned model
+- Use [inference](#-step-6-interactive-inference) to test generation
+- [Export](#-model-export) for production use
 [INFO] Fine-tuning on your custom data...
 Epoch 1/5 - Loss: 1.943 → 1.234
 [SUCCESS] Fine-tuned model saved to exports/checkpoints/finetuned/

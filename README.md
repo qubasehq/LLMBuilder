@@ -216,7 +216,34 @@ To fine-tune the model on your own data:
 
 1. Place your training files in `data/finetune/`
 2. The system will automatically use the latest checkpoint
-3. Fine-tuned models save to `exports/checkpoints/finetuned/`
+3. Run the fine-tuning script:
+   ```bash
+   python finetune/finetune.py \
+     --config config.json \
+     --pretrained-model exports/checkpoints/latest.pt \
+     --train-data data/finetune/ \
+     --tokenizer-dir exports/tokenizer/
+   ```
+4. Fine-tuned models save to `exports/checkpoints/finetuned/`
+
+### Fine-tuning Configuration
+
+You can customize fine-tuning by modifying these parameters:
+
+```yaml
+finetune:
+  learning_rate: 0.0001    # Lower than training LR
+  batch_size: 4           # Adjust based on GPU memory
+  num_epochs: 3           # Number of fine-tuning epochs
+  warmup_steps: 100       # Learning rate warmup steps
+```
+
+### Monitoring Fine-tuning
+
+Monitor the fine-tuning process with:
+```bash
+tensorboard --logdir=exports/logs/finetune/
+```
 
 ## Text Generation <a name="text-generation"></a>
 
@@ -233,27 +260,160 @@ Options:
 
 ## Configuration <a name="configuration"></a>
 
-Edit `training/config.yaml` to customize model and training settings:
+This project includes multiple configuration files optimized for different hardware setups. Choose the one that best matches your environment:
 
+### Available Configurations
+
+1. **config.json** - Balanced configuration for standard CPUs
+   - Moderate model size
+   - Good balance between speed and quality
+   - Works well on most modern laptops/desktops
+
+2. **config_gpu.json** - Optimized for GPU training
+   - Larger model capacity
+   - Mixed precision training
+   - Gradient accumulation
+   - Best for NVIDIA GPUs with 8GB+ VRAM
+
+3. **config_cpu_small.json** - For very limited CPUs
+   - Minimal memory footprint
+   - Smaller model size
+   - Reduced sequence length
+   - Ideal for testing or low-resource environments
+
+### Configuration Options
+
+#### Model Architecture
 ```yaml
-# Model architecture
 model:
-  vocab_size: 16000    # Vocabulary size
-  n_layer: 6          # Transformer layers
-  n_head: 6           # Attention heads
-  n_embd: 512         # Embedding dimension
-  block_size: 256     # Context tokens
-  dropout: 0.1        # Dropout rate
-
-# Training settings
-train:
-  learning_rate: 0.0003
-  batch_size: 16
-  max_iters: 100000
-  eval_interval: 1000
-  log_interval: 100
-  device: cpu         # cpu or cuda
+  vocab_size: 16000      # Vocabulary size
+  embedding_dim: 384     # Size of token embeddings
+  num_layers: 6          # Number of transformer layers
+  num_heads: 6           # Number of attention heads
+  hidden_dim: 1536       # Size of feedforward layers
+  max_seq_length: 256    # Maximum sequence length
+  dropout: 0.1           # Dropout rate
+  use_bias: true         # Use bias in linear layers
+  tie_weights: true      # Tie input/output embeddings
 ```
+
+#### Training Settings
+```yaml
+training:
+  batch_size: 8          # Training batch size
+  learning_rate: 0.0002  # Learning rate
+  weight_decay: 0.01     # Weight decay for regularization
+  num_epochs: 10         # Number of training epochs
+  warmup_steps: 1000     # Warmup steps for learning rate
+  gradient_clip_norm: 1.0 # Gradient clipping
+  save_every: 1000       # Save checkpoint every N steps
+  eval_every: 500        # Evaluate every N steps
+  log_every: 10          # Log metrics every N steps
+  num_workers: 4         # Data loading workers
+  pin_memory: true       # Pin memory for faster transfer
+  prefetch_factor: 2      # Batches to prefetch
+  use_mixed_precision: false # Enable mixed precision
+```
+
+#### Device Configuration
+```yaml
+device:
+  use_cuda: false        # Use CUDA if available
+  cuda_device: 0         # CUDA device index
+  use_mps: false         # Use MPS on Apple Silicon
+  cpu_threads: 0         # Number of CPU threads (0 = all)
+  enable_mkldnn: true    # Enable MKLDNN acceleration
+  mixed_precision: false # Global mixed precision flag
+```
+
+### Choosing the Right Configuration
+
+1. **For GPU Training**: Use `config_gpu.json`
+   ```bash
+   python training/train.py --config config_gpu.json
+   ```
+
+2. **For Standard CPU Training**: Use `config.json`
+   ```bash
+   python training/train.py --config config.json
+   ```
+
+3. **For Low-End CPUs**: Use `config_cpu_small.json`
+   ```bash
+   python training/train.py --config config_cpu_small.json
+   ```
+
+### Custom Configuration
+
+1. Copy an existing config file:
+   ```bash
+   cp config.json my_config.json
+   ```
+
+2. Edit the parameters as needed
+3. Use your custom config:
+   ```bash
+   python training/train.py --config my_config.json
+   ```
+
+### Important Notes
+- Larger `batch_size` and `max_seq_length` require more memory
+- `num_workers` should be ≤ number of CPU cores
+- Enable `mixed_precision` for GPUs with Tensor Cores (Volta, Turing, Ampere, etc.)
+- For small GPUs, reduce `batch_size` and enable `gradient_accumulation_steps`
+- For very small CPUs, reduce `num_layers`, `embedding_dim`, and `hidden_dim`
+
+## Debugging <a name="debugging"></a>
+
+The project includes several debugging scripts in the `debug_scripts/` directory to help diagnose issues:
+
+### Available Debug Scripts
+
+1. **debug_loader.py**
+   - Tests and profiles the data loading pipeline
+   - Helps identify bottlenecks in data loading
+   - Usage:
+     ```bash
+     python debug_scripts/debug_loader.py --config config.json
+     ```
+
+2. **debug_training.py**
+   - Runs a minimal training loop with extensive logging
+   - Verifies model can complete a forward/backward pass
+   - Usage:
+     ```bash
+     python debug_scripts/debug_training.py --config config.json --max-steps 10
+     ```
+
+3. **debug_timestamps.py**
+   - Profiles different components of the training loop
+   - Helps identify slow operations
+   - Usage:
+     ```bash
+     python debug_scripts/debug_timestamps.py --config config.json
+     ```
+
+### Debugging Tips
+
+1. **Reduced Test Case**
+   - Use a tiny dataset with `--max-samples 10`
+   - Set `num_workers=0` to simplify data loading
+   - Reduce `batch_size` and `max_seq_length`
+
+2. **Common Issues**
+   - **CUDA Out of Memory**: Reduce `batch_size` or model dimensions
+   - **Slow Training**: Check data loading with `debug_loader.py`
+   - **NaN/Inf Losses**: Try gradient clipping and lower learning rate
+
+3. **Verbose Logging**
+   ```bash
+   python training/train.py --config config.json --log-level DEBUG
+   ```
+
+4. **Memory Profiling**
+   ```bash
+   python -m memory_profiler training/train.py --config config.json
+   ```
 
 ## Advanced Usage <a name="advanced-usage"></a>
 

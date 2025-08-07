@@ -240,7 +240,7 @@ function Invoke-FinetuneStage {
         return $false
     }
     
-    $command = "$PYTHON training/finetune.py --config $Config --pretrained-model $($latestCheckpoint.FullName) --train-data $finetuneDataDir --tokenizer-dir $TOKENIZER_DIR"
+    $command = "$PYTHON finetune/finetune.py --config $Config --pretrained-model $($latestCheckpoint.FullName) --train-data $finetuneDataDir --tokenizer-dir $TOKENIZER_DIR"
     return (Invoke-SafeCommand -Command $command -ErrorMsg "Fine-tuning failed" -SuccessMsg "Fine-tuning completed successfully")
 }
 

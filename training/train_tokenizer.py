@@ -5,10 +5,12 @@ Trains a SentencePiece tokenizer on cleaned text data.
 
 import os
 import sys
+import time
 import torch
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from loguru import logger
+from tqdm import tqdm
 
 # Tokenizer imports
 try:
@@ -75,66 +77,124 @@ class TokenizerTrainer:
         if not text_files:
             raise FileNotFoundError(f"No text files found in {data_dir}")
         
-        # Create combined file
+        # Create combined file with progress bar
         logger.info(f"Combining {len(text_files)} text files...")
+        total_size = sum(f.stat().st_size for f in text_files)
+        processed_size = 0
         
-        with open(combined_file, 'w', encoding='utf-8') as outfile:
-            for text_file in text_files:
-                try:
-                    with open(text_file, 'r', encoding='utf-8') as infile:
-                        outfile.write(infile.read())
-                        outfile.write('\n\n')
-                    logger.info(f"Added {text_file.name}")
-                except Exception as e:
-                    logger.error(f"Error reading {text_file}: {e}")
-                    continue
+        with tqdm(total=total_size, unit='B', unit_scale=True, desc="Combining files") as pbar:
+            with open(combined_file, 'w', encoding='utf-8') as outfile:
+                for text_file in text_files:
+                    try:
+                        file_size = text_file.stat().st_size
+                        with open(text_file, 'r', encoding='utf-8') as infile:
+                            content = infile.read()
+                            outfile.write(content)
+                            outfile.write('\n\n')
+                        processed_size += file_size
+                        pbar.update(file_size)
+                        pbar.set_postfix(file=text_file.name[:20] + '...' if len(text_file.name) > 20 else text_file.name)
+                    except Exception as e:
+                        logger.error(f"Error reading {text_file}: {e}")
+                        continue
         
         logger.info(f"Combined training data saved to: {combined_file}")
         return combined_file
     
+    def validate_input_file(self, input_file: Path) -> None:
+        """Validate the input file before training."""
+        if not input_file.exists():
+            raise FileNotFoundError(f"Input file not found: {input_file}")
+            
+        file_size = input_file.stat().st_size
+        if file_size == 0:
+            raise ValueError(f"Input file is empty: {input_file}")
+            
+        # Check if file has valid text content
+        try:
+            with open(input_file, 'r', encoding='utf-8') as f:
+                first_chunk = f.read(1024)
+                if not first_chunk.strip():
+                    raise ValueError(f"Input file contains no text content: {input_file}")
+        except UnicodeDecodeError:
+            raise ValueError(f"Input file is not a valid text file (UTF-8 encoding required): {input_file}")
+    
     def train_tokenizer(self, 
                        input_file: Path, 
-                       output_dir: str = "tokenizer",
+                       output_dir: str = "exports/tokenizer",
                        model_prefix: str = "tokenizer") -> Dict[str, Any]:
         """Train SentencePiece tokenizer."""
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         
+        # Validate input file first
+        self.validate_input_file(input_file)
+        
         model_path = output_dir / model_prefix
         
-        # SentencePiece training arguments
-        train_args = [
-            f'--input={input_file}',
-            f'--model_prefix={model_path}',
-            f'--vocab_size={self.vocab_size}',
-            f'--model_type={self.model_type}',
-            f'--character_coverage={self.character_coverage}',
-            f'--pad_id={self.pad_id}',
-            f'--unk_id={self.unk_id}',
-            f'--bos_id={self.bos_id}',
-            f'--eos_id={self.eos_id}',
-            '--add_dummy_prefix=true',
-            '--remove_extra_whitespaces=true',
-            '--normalization_rule_name=identity'
-        ]
+        # Set up training arguments
+        train_args = {
+            'input': str(input_file),
+            'model_prefix': str(model_path),
+            'vocab_size': self.vocab_size,
+            'model_type': self.model_type,
+            'character_coverage': self.character_coverage,
+            'pad_id': self.pad_id,
+            'unk_id': self.unk_id,
+            'bos_id': self.bos_id,
+            'eos_id': self.eos_id,
+            'max_sentence_length': 16384,
+            'shuffle_input_sentence': True,
+            'num_threads': os.cpu_count() or 4,
+            'input_sentence_size': 1000000,
+            'seed_sentencepiece_size': 1000000,
+            'train_extremely_large_corpus': True,
+        }
         
         logger.info("Starting tokenizer training...")
-        logger.info(f"Training arguments: {' '.join(train_args)}")
+        logger.info(f"Input file: {input_file}")
+        logger.info(f"Output directory: {output_dir}")
+        logger.info(f"Vocab size: {self.vocab_size}")
+        logger.info(f"Model type: {self.model_type}")
+        
+        # Simple training without progress tracking
+        logger.info("Training tokenizer (this may take a few minutes)...")
+        start_time = time.time()
         
         try:
-            # Train tokenizer
-            spm.SentencePieceTrainer.train(' '.join(train_args))
+            # Train the tokenizer with minimal arguments
+            spm.SentencePieceTrainer.train(
+                input=str(input_file),
+                model_prefix=str(model_path),
+                vocab_size=self.vocab_size,
+                model_type=self.model_type,
+                character_coverage=self.character_coverage,
+                pad_id=self.pad_id,
+                unk_id=self.unk_id,
+                bos_id=self.bos_id,
+                eos_id=self.eos_id,
+                max_sentence_length=16384,
+                shuffle_input_sentence=True,
+                num_threads=os.cpu_count() or 4
+            )
             
-            # Verify output files
+            # Verify the output files
             model_file = Path(f"{model_path}.model")
             vocab_file = Path(f"{model_path}.vocab")
             
             if not model_file.exists() or not vocab_file.exists():
-                raise FileNotFoundError("Tokenizer training failed - output files not found")
+                raise FileNotFoundError(
+                    f"Tokenizer training completed but output files not found. "
+                    f"Expected: {model_file} and {vocab_file}"
+                )
+                
+            # Log file sizes
+            model_size = model_file.stat().st_size / (1024 * 1024)  # MB
+            vocab_size = vocab_file.stat().st_size / 1024  # KB
             
-            logger.info(f"Tokenizer training completed successfully!")
-            logger.info(f"Model file: {model_file}")
-            logger.info(f"Vocab file: {vocab_file}")
+            logger.success(f"Tokenizer training completed successfully!")
+            logger.info(f"Model file: {model_file} ({model_size:.2f} MB)")
+            logger.info(f"Vocab file: {vocab_file} ({vocab_size:.2f} KB)")
             
             # Test the tokenizer
             test_results = self.test_tokenizer(model_file)
@@ -149,6 +209,15 @@ class TokenizerTrainer:
             
         except Exception as e:
             logger.error(f"Tokenizer training failed: {e}")
+            logger.error(f"Please check if the input file contains valid text data.")
+            logger.error(f"Input file: {input_file}")
+            if input_file.exists():
+                try:
+                    with open(input_file, 'r', encoding='utf-8') as f:
+                        sample = f.read(500)
+                        logger.info(f"First 500 characters of input file:\n---\n{sample}\n---")
+                except Exception as read_err:
+                    logger.error(f"Failed to read input file for debugging: {read_err}")
             raise
     
     def test_tokenizer(self, model_file: Path) -> Dict[str, Any]:
@@ -191,7 +260,18 @@ class TokenizerTrainer:
                 total_tokens += len(tokens)
                 
                 logger.info(f"'{sentence}' -> {len(tokens)} tokens")
-                logger.info(f"Tokens: {token_pieces}")
+                # Convert Unicode tokens to safe representation for logging
+                safe_tokens = []
+                for token in token_pieces:
+                    try:
+                        # Try to encode/decode to check if it's safe for console
+                        token.encode('ascii')
+                        safe_tokens.append(token)
+                    except UnicodeEncodeError:
+                        # Replace problematic characters with readable representation
+                        safe_token = token.replace('▁', '<space>')
+                        safe_tokens.append(safe_token)
+                logger.info(f"Tokens: {safe_tokens}")
             
             # Calculate average tokens per sentence
             avg_tokens = total_tokens / len(test_sentences)
@@ -251,12 +331,20 @@ class TokenizerTrainer:
 
 def main():
     """Main entry point."""
+    # Set console encoding to UTF-8 on Windows
+    if sys.platform.startswith('win'):
+        try:
+            # Try to set console to UTF-8 mode
+            os.system('chcp 65001 >nul 2>&1')
+        except:
+            pass  # Ignore if it fails
+    
     # Setup logging
     setup_logging(log_dir="logs", level="INFO")
     
     try:
         # Load configuration
-        config = ConfigManager.load_config("training/config.yaml")
+        config = ConfigManager.load_config("config.json")
         vocab_size = config['model']['vocab_size']
         
         # Initialize trainer

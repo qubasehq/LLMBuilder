@@ -286,7 +286,7 @@ run_finetuning() {
     # Get the latest checkpoint
     LATEST_CHECKPOINT=$(ls -t $CHECKPOINT_DIR/*.pt 2>/dev/null | head -1)
     
-    if python training/finetune.py --config config.json --pretrained-model "$LATEST_CHECKPOINT" --train-data "$FINETUNE_DATA_DIR" --tokenizer-dir "$TOKENIZER_DIR"; then
+    if python finetune/finetune.py --config config.json --pretrained-model "$LATEST_CHECKPOINT" --train-data "$FINETUNE_DATA_DIR" --tokenizer-dir "$TOKENIZER_DIR"; then
         print_success "Model fine-tuning completed"
     else
         print_error "Model fine-tuning failed"
