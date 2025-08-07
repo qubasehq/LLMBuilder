@@ -446,9 +446,27 @@ processor = DataPreprocessor(
 ```python
 from training.train import Trainer
 
-trainer = Trainer(config_path="training/config.yaml")
+# Initialize trainer with JSON config
+trainer = Trainer(config_path="config.json")
+
+# Start training
 trainer.train()
+
+# Example with custom settings
+custom_trainer = Trainer(
+    config_path="config.json",
+    train_data_dir="data/processed/train",
+    val_data_dir="data/processed/val",
+    output_dir="exports/models/custom_run"
+)
+custom_trainer.train()
 ```
+
+**Configuration Options**:
+- `config_path`: Path to JSON config file (e.g., `config.json`)
+- `train_data_dir`: Directory containing training data (overrides config)
+- `val_data_dir`: Directory containing validation data (overrides config)
+- `output_dir`: Directory to save checkpoints and logs (overrides config)
 
 ## Training Monitoring <a name="monitoring-training"></a>
 
