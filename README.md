@@ -1,78 +1,74 @@
-# LLMBuilder
+# LLM Training Framework
 
-A robust, production-ready implementation for training Large Language Models from scratch. Built by Qubasehq. This project provides a complete pipeline for data preprocessing, tokenizer training, model training, and evaluation, optimized for CPU execution with optional GPU support.
+A production-ready implementation for training and fine-tuning Large Language Models from scratch. This project provides a complete pipeline for data preprocessing, tokenizer training, model training, and evaluation, with optimizations for both CPU and GPU environments.
 
-## 🚀 Features
+## Key Features
 
-- **Complete Training Pipeline**: End-to-end automation from raw data to trained model
-- **CPU-Optimized**: Efficient training on CPU with multi-threading support
-- **Robust Error Handling**: Comprehensive error handling and logging throughout
-- **Modular Design**: Clean, maintainable code with clear separation of concerns
+- **End-to-End Training Pipeline**: Complete workflow from raw data to trained model
+- **CPU Optimization**: Efficient multi-threaded training on CPU
+- **Robust Error Handling**: Comprehensive error handling and logging
+- **Modular Architecture**: Clean, maintainable code structure
 - **Multiple Data Formats**: Support for PDF, DOCX, and TXT files
-- **Advanced Tokenization**: SentencePiece-based tokenizer with BPE encoding
-- **GPT Architecture**: Modern transformer architecture with attention mechanisms
-- **Comprehensive Evaluation**: Perplexity, text generation, and performance benchmarks
-- **Checkpointing**: Automatic model checkpointing and recovery
-- **Detailed Logging**: Structured logging with rotation and retention
+- **Advanced Tokenization**: SentencePiece-based tokenizer with BPE
+- **GPT Architecture**: Modern transformer implementation
+- **Model Evaluation**: Includes perplexity and text generation metrics
+- **Checkpointing**: Automatic save/restore of training progress
+- **Detailed Logging**: Comprehensive training logs and metrics
 
-## 📋 Requirements
+## System Requirements
 
-- Python 3.8+
-- 4GB+ RAM (8GB+ recommended)
-- 2GB+ disk space for models and data
-- Windows/Linux/macOS
+- Python 3.8 or higher
+- 4GB RAM minimum (8GB+ recommended)
+- 2GB+ free disk space
+- Windows, Linux, or macOS
 
-## 🛠️ Installation
+## Installation
 
-1. **Clone the repository**:
+1. Clone the repository:
    ```bash
    git clone <repository-url>
    cd LLMBuilder
    ```
 
-2. **Create virtual environment** (recommended):
+2. Create and activate virtual environment:
    ```bash
+   # Linux/macOS
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate
+   
+   # Windows
+   python -m venv venv
+   .\venv\Scripts\activate
    ```
 
-3. **Install dependencies**:
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-## ⚠️ **Before You Start - System Checks**
+## System Preparation
 
-**Check your system readiness before training:**
+### System Requirements Check
 
-### **System Requirements Check:**
+Before starting, ensure your system meets the requirements:
+
 ```bash
-# Check RAM (Linux/Mac)
-free -h
-# Check RAM (Windows)
-# Open Task Manager → Performance → Memory
+# Linux/macOS
+free -h      # Check available memory
+df -h        # Check disk space
+nproc        # Check CPU cores
 
-# Check storage (Linux/Mac)
-df -h
-# Check storage (Windows)
-# Open File Explorer → This PC
-
-# Check CPU cores
-nproc  # Linux/Mac
-echo %NUMBER_OF_PROCESSORS%  # Windows
+# Windows
+# Use Task Manager → Performance → Memory/Disk
+# Check CPU cores in System Information
 ```
 
-### **🎯 Smart Starting Strategy:**
-- **Start small**: Use 100MB of data first to test the pipeline
-- **Test run**: Run 1000 iterations before committing to full training
-- **Monitor resources**: Watch memory usage during preprocessing
-- **Use checkpoints**: Training saves progress every 1000 steps automatically
+### Recommended Workflow
 
-### **📊 During Training Monitoring:**
-- **Monitor logs**: Check `logs/training.log` for memory warnings
-- **Watch progress**: Training progress shown every 100 steps
-- **Be patient**: 5GB+ data will take **days**, not hours
-- **Use checkpoints**: You can always resume training from latest checkpoint
+1. **Start with a small dataset** (100MB) to test the pipeline
+2. **Monitor system resources** during initial runs
+3. **Use checkpoints** - training progress is saved automatically
+4. **Check logs** in `logs/training.log` for any issues
 
 ### **🔍 Real-time Monitoring:**
 ```bash
@@ -81,324 +77,300 @@ htop
 # Windows: Use Task Manager or Resource Monitor
 ```
 
-## 📖 **Complete Step-by-Step Guide**
+## Getting Started
 
-**New to LLM training?** Check out our **[Complete Usage Guide](USAGE.md)** for:
-- 🎯 **Beginner-friendly walkthrough** of every stage
-- 📊 **Real terminal outputs** you'll see
-- 🚨 **Common problems** and their solutions
-- ☕ **Platform-specific commands** (Windows/Mac/Linux)
-- 🎉 **Interactive examples** and troubleshooting
+For detailed instructions, see the [Complete Usage Guide](USAGE.md) which includes:
+- Step-by-step walkthroughs
+- Example terminal outputs
+- Common issues and solutions
+- Platform-specific commands
+- Troubleshooting guide
 
-Perfect for first-time users! No technical background required.
-
-## 📁 Project Structure (LLMBuilder)
+## Project Structure
 
 ```
-├── data/
-│   ├── raw/           # ✅ Place your training data here (.txt, .pdf, .docx)
-│   ├── cleaned/       # ✅ Preprocessed text files
-│   └── tokens/        # ✅ Tokenized datasets
-├── model/
-│   └── gpt_model.py   # ✅ GPT model architecture
-├── training/
-│   ├── config.yaml    # ✅ Training configuration
-│   ├── preprocess.py  # ✅ Data preprocessing
-│   ├── train_tokenizer.py  # ✅ Tokenizer training
-│   ├── train.py       # ✅ Model training
-│   ├── quantization.py # ✅ Model quantization utilities
-│   ├── dataset.py     # ✅ Dataset utilities
-│   └── utils.py       # ✅ Common utilities
-├── eval/
-│   └── eval.py        # ✅ Model evaluation
-├── tools/
-│   ├── download_hf_model.py # ✅ Download Hugging Face models
-│   └── export_gguf.py # ✅ Export to GGUF format
-├── exports/
-│   ├── checkpoints/   # ✅ Saved model checkpoints
-│   └── models/        # ✅ Exported models (GGUF, quantized)
-├── run.sh             # ✅ Linux/Mac training script
-├── run.bat            # ✅ Windows training script
-├── run.ps1            # ✅ PowerShell training script
-├── quantize_model.py  # ✅ Model quantization CLI
-└── requirements.txt   # ✅ Python dependencies
+LLMBuilder/
+├── data/                  # Data directories
+│   ├── raw/              # Raw input files (.txt, .pdf, .docx)
+│   ├── cleaned/          # Processed text files
+│   └── tokens/           # Tokenized datasets
+├── model/                # Model architecture
+│   └── gpt_model.py      # GPT model implementation
+├── training/             # Training pipeline
+│   ├── config.yaml       # Configuration
+│   ├── preprocess.py     # Data preprocessing
+│   ├── train_tokenizer.py # Tokenizer training
+│   ├── train.py          # Model training
+│   ├── quantization.py   # Model quantization
+│   ├── dataset.py        # Dataset handling
+│   └── utils.py          # Utility functions
+├── eval/                 # Evaluation scripts
+│   └── eval.py
+├── tools/                # Additional tools
+│   ├── download_hf_model.py
+│   └── export_gguf.py
+├── exports/              # Output files
+│   ├── checkpoints/     # Training checkpoints
+│   └── models/          # Exported models
+├── run.sh               # Linux/Mac script
+├── run.bat              # Windows batch script
+├── run.ps1              # PowerShell script
+├── quantize_model.py    # Model quantization
+└── requirements.txt     # Dependencies
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Prepare Your Data
 
-**🚀 Smart Data Downloader (NEW!)**
+#### Option 1: Download Sample Data
 ```bash
-# Download sample corpus with diverse topics
+# Download sample corpus
 python data/download_data.py --corpus
 
-# Download specific topics (15+ available)
+# Or download specific topics
 python data/download_data.py --topic literature --count 5
 python data/download_data.py --topic technology --count 3
-python data/download_data.py --topic science --count 4
-
-# Download specific books
-python data/download_data.py --book 1342 --book 84 --book 11
 ```
 
-**📚 Available topics:** literature, science, technology, business, health, education, environment, sports, food, travel, religion, language, media
+Available topics: literature, science, technology, business, health, education
 
-**📖 Complete guide:** [data/SOURCES.md](data/SOURCES.md)
+#### Option 2: Use Your Own Data
+Place your documents in `data/raw/`:
+- Text files (.txt)
+- PDF files (.pdf)
+- Word documents (.docx)
 
-**Manual option:** Place your documents in `data/raw/`:
-- **Text files** (.txt): Plain text documents
-- **PDF files** (.pdf): Will be automatically extracted
-- **Word documents** (.docx): Will be automatically extracted
+### 2. Run the Pipeline
 
-### 2. Run the Complete Pipeline
-
+#### Linux/macOS:
 ```bash
-# Make the script executable (Linux/macOS)
 chmod +x run.sh
-
-# Run the complete pipeline
 ./run.sh
-
-# Or run with Python on Windows
-python -c "exec(open('run.sh').read())"
 ```
 
-### 3. Individual Stages
+#### Windows:
+```batch
+run.bat
+```
 
-You can also run individual stages:
+Or using PowerShell:
+```powershell
+.\run.ps1
+```
+
+### 3. Run Specific Stages
+
+Run individual pipeline stages as needed:
 
 ```bash
-# Data preprocessing only
+# Preprocess data
 ./run.sh preprocess
 
-# Tokenizer training only
+# Train tokenizer
 ./run.sh tokenizer
 
-# Model training only
+# Train model
 ./run.sh train
 
-# Model evaluation only
+# Evaluate model
 ./run.sh eval
 
-# Fine-tune a pre-trained model (add your data to data/finetune/)
+# Fine-tune existing model
 ./run.sh finetune
 
-# Launch interactive inference (text generation)
+# Interactive text generation
 ./run.sh inference
 ```
 
-**On Windows:**
+On Windows, use `run.bat` or `run.ps1` with the same stage names.
 
-```bat
-REM Use run.bat (Batch) or run.ps1 (PowerShell)
-run.bat finetune
-run.ps1 -Stage finetune
-run.bat inference
-run.ps1 -Stage inference
+## Fine-tuning
+
+To fine-tune the model on your own data:
+
+1. Place your training files in `data/finetune/`
+2. The system will automatically use the latest checkpoint
+3. Fine-tuned models save to `exports/checkpoints/finetuned/`
+
+## Text Generation
+
+Run interactive text generation:
+
+```bash
+python inference.py --interactive
 ```
 
-### Fine-tuning
-- Place your fine-tuning data (txt/pdf/docx) in `data/finetune/`.
-- The script will use the latest checkpoint for fine-tuning.
-- Output will be saved to `exports/checkpoints/finetuned/`.
+Options:
+- `--temperature`: Controls randomness (0.0-1.0)
+- `--top_k`: Limit to top-k predictions
+- `--top_p`: Nucleus sampling threshold
 
-### Inference (Text Generation)
-- The `inference` stage launches an interactive prompt for text generation.
-- Uses the latest model checkpoint and tokenizer.
-- Supports temperature, top-k, and top-p sampling.
+## Configuration
 
-## ⚙️ Configuration
-
-Edit `training/config.yaml` to customize your training:
+Edit `training/config.yaml` to customize model and training settings:
 
 ```yaml
+# Model architecture
 model:
-  vocab_size: 16000      # Vocabulary size
-  n_layer: 6            # Number of transformer layers
-  n_head: 6             # Number of attention heads
-  n_embd: 512           # Embedding dimension
-  block_size: 256       # Context window size
-  dropout: 0.1          # Dropout rate
+  vocab_size: 16000    # Vocabulary size
+  n_layer: 6          # Transformer layers
+  n_head: 6           # Attention heads
+  n_embd: 512         # Embedding dimension
+  block_size: 256     # Context tokens
+  dropout: 0.1        # Dropout rate
 
+# Training settings
 train:
-  learning_rate: 0.0003 # Learning rate
-  batch_size: 16        # Batch size
-  max_iters: 100000     # Maximum training iterations
-  eval_interval: 1000   # Evaluation frequency
-  log_interval: 100     # Logging frequency
-  device: cpu           # Training device (cpu/cuda)
+  learning_rate: 0.0003
+  batch_size: 16
+  max_iters: 100000
+  eval_interval: 1000
+  log_interval: 100
+  device: cpu         # cpu or cuda
 ```
 
-## 🔧 Advanced Usage
+## Advanced Usage
 
 ### CPU Optimization
 
-The system is optimized for CPU training:
-- Multi-threading support
-- Memory-efficient operations
-- Gradient accumulation for larger effective batch sizes
-- MKLDNN optimizations
+Optimize for CPU training with:
+- Multi-threading
+- Memory efficiency
+- Gradient accumulation
+- MKLDNN acceleration
 
-### Custom Data Processing
+### Data Processing
+
+Example custom preprocessing:
 
 ```python
 from training.preprocess import DataPreprocessor
 
-# Custom preprocessing
 processor = DataPreprocessor(
-    min_length=100,        # Minimum text length
-    max_length=500000,     # Maximum text length
-    remove_urls=True,      # Remove URLs
-    remove_emails=True,    # Remove email addresses
-    normalize_whitespace=True  # Normalize whitespace
+    min_length=100,       # Min text length
+    max_length=500000,    # Max text length
+    remove_urls=True,     # Clean URLs
+    remove_emails=True,   # Clean emails
+    normalize_whitespace=True
 )
-
-results = processor.process_all()
 ```
 
-### Custom Training
+### Training API
 
 ```python
 from training.train import Trainer
 
-# Initialize trainer
 trainer = Trainer(config_path="training/config.yaml")
-
-# Start training
 trainer.train()
 ```
 
-### Model Evaluation
-
-```python
-from eval.eval import ModelEvaluator
-
-# Initialize evaluator
-evaluator = ModelEvaluator(
-    model_path="exports/checkpoints/best_model.pt",
-    tokenizer_path="tokenizer/tokenizer.model"
-)
-
-# Generate text
-generated = evaluator.generate_text(
-    prompt="The future of AI is",
-    max_new_tokens=100,
-    temperature=0.8
-)
-```
-
-## 📊 Monitoring Training
+## Training Monitoring
 
 ### Logs
-
-All training progress is logged to:
-- **Console**: Real-time progress with colored output
-- **Files**: Detailed logs in `logs/training.log`
-- **Metrics**: Training history in `logs/training_history.json`
+- Console: Real-time progress
+- File: `logs/training.log`
+- Metrics: `logs/training_history.json`
 
 ### Checkpoints
+- `checkpoint_epoch_N.pt`: Regular saves
+- `best_model.pt`: Best validation score
+- `latest.pt`: Most recent checkpoint
 
-Models are automatically saved to:
-- `exports/checkpoints/checkpoint_epoch_N.pt` - Regular checkpoints
-- `exports/checkpoints/best_model.pt` - Best model based on validation loss
-- `exports/checkpoints/latest.pt` - Latest checkpoint
+## Performance Optimization
 
-## 🎯 Performance Tips
+### CPU Training
+- Batch size: 8-32 (adjust for RAM)
+- Use all CPU cores
+- Enable gradient accumulation
+- Try mixed precision if available
 
-### For CPU Training
-- Use batch sizes of 8-32 depending on your RAM
-- Enable all CPU cores with `torch.set_num_threads()`
-- Consider gradient accumulation for larger effective batch sizes
-- Use mixed precision if available
-
-### For Memory Optimization
-- Reduce `block_size` in config (e.g., 128 or 256)
+### Memory Management
+- Reduce `block_size` (128-256)
 - Decrease `batch_size`
-- Use smaller model dimensions (`n_embd`, `n_layer`)
+- Use smaller model dimensions
 
-### For Faster Training
-- Increase `batch_size` if you have enough RAM
-- Use larger `block_size` for better context
-- Consider using multiple data files for better shuffling
+### Speed Improvements
+- Increase `batch_size` (if RAM allows)
+- Use larger `block_size` for context
+- Multiple data files improve shuffling
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-1. **Out of Memory**:
-   - Reduce batch_size in config.yaml
-   - Reduce block_size or model dimensions
+1. **Out of Memory**
+   - Reduce `batch_size` in config.yaml
+   - Decrease `block_size` or model size
    - Close other applications
 
-2. **No Training Data**:
-   - Ensure files are in `data/raw/`
-   - Check supported formats: .txt, .pdf, .docx
+2. **No Training Data**
+   - Check `data/raw/` directory
+   - Supported formats: .txt, .pdf, .docx
    - Verify file permissions
 
-3. **Slow Training**:
-   - Check CPU usage and optimize thread count
-   - Consider reducing model size for faster iteration
-   - Monitor memory usage
+3. **Slow Training**
+   - Optimize CPU thread count
+   - Reduce model size
+   - Monitor system resources
 
-4. **Import Errors**:
-   - Ensure all dependencies are installed: `pip install -r requirements.txt`
-   - Check Python version (3.8+ required)
-   - Verify virtual environment activation
+4. **Import Errors**
+   ```bash
+   pip install -r requirements.txt
+   python --version  # Requires 3.8+
+   ```
 
-### Getting Help
+Check `logs/` for detailed error messages.
 
-Check the logs in `logs/` directory for detailed error messages and training progress.
+## Model Architecture
 
-## 📈 Model Architecture
+GPT-style transformer with:
+- Multi-head self-attention
+- GELU activation
+- Pre-norm layer normalization
+- Learned positional embeddings
+- Weight-tied embeddings
 
-The model implements a GPT-style transformer architecture:
+### Default Specs
+- Parameters: ~50M
+- Layers: 12
+- Heads: 12
+- Embedding: 768D
+- Context: 512 tokens
+- Vocabulary: 16K BPE
 
-- **Multi-head self-attention** with causal masking
-- **Feed-forward networks** with GELU activation
-- **Layer normalization** (pre-norm architecture)
-- **Positional embeddings** for sequence understanding
-- **Weight tying** between input and output embeddings
+## Future Enhancements
 
-### Default Configuration
+Planned features:
+- GPU acceleration
+- Distributed training
+- Web monitoring interface
+- More model architectures
+- Additional optimizations
 
-- **Parameters**: ~50M (configurable)
-- **Layers**: 12 transformer blocks
-- **Attention Heads**: 12
-- **Embedding Dimension**: 768
-- **Context Window**: 512 tokens
-- **Vocabulary**: 16,000 tokens (BPE)
+## Pre-trained Models
 
-## 🔮 Future Enhancements
-
-- [ ] GPU acceleration support
-- [x] Model export to GGUF format ✅
-- [x] ONNX export for inference ✅
-- [ ] Distributed training
-- [ ] Web interface for training monitoring
-- [x] Pre-trained model downloads ✅
-- [x] Fine-tuning capabilities ✅
-- [x] Quantization support ✅
-
-## 📦 Downloading Pre-trained Models
-
-You can automatically download any pre-trained model from HuggingFace using the provided script:
+Download models from HuggingFace:
 
 ```bash
-python tools/download_hf_model.py --model Qwen/Qwen2.5-Coder-0.5B --output-dir ./models/Qwen2.5-Coder-0.5B
+python tools/download_hf_model.py \
+  --model Qwen/Qwen2.5-Coder-0.5B \
+  --output-dir ./models/Qwen2.5-Coder-0.5B
 ```
 
-- The script will fetch all files for the specified model and save them to the output directory.
-- You can use these files for further fine-tuning or inference with this pipeline.
+## License
 
-## 📄 License
+MIT Licensed. See [LICENSE](LICENSE) for details.
 
-This project is open source and available under the MIT License.
+## Contributing
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit pull requests, report bugs, or suggest features.
+Contributions welcome! Please submit PRs or open issues.
 
 ---
 
-**Ready to train your own LLM with LLMBuilder?** Start by adding your data to `data/raw/` and running `./run.sh`! 
+**Get started** by adding your data to `data/raw/` and running:
+
+```bash
+./run.sh  # Linux/macOS
+run.bat   # Windows
+``` 
