@@ -31,6 +31,12 @@ except ImportError:
     markdown = None
     BeautifulSoup = None
 
+try:
+    from pptx import Presentation
+except ImportError:
+    logger.warning("python-pptx not available. PPTX processing will be disabled.")
+    Presentation = None
+
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 from training.utils import setup_logging
@@ -214,6 +220,37 @@ class TextProcessor:
         except Exception as e:
             logger.error(f"Error reading Markdown file {file_path}: {e}")
             return None
+            
+    def extract_from_pptx(self, file_path: Path) -> Optional[str]:
+        """Extract text from PowerPoint (.pptx) file."""
+        if Presentation is None:
+            logger.warning(f"Skipping PPTX {file_path}: python-pptx not available")
+            return None
+            
+        try:
+            prs = Presentation(file_path)
+            text_runs = []
+            
+            for slide in prs.slides:
+                # Extract text from slide title
+                if slide.shapes.title and slide.shapes.title.text:
+                    text_runs.append(slide.shapes.title.text)
+                
+                # Extract text from all shapes in the slide
+                for shape in slide.shapes:
+                    if not shape.has_text_frame:
+                        continue
+                    for paragraph in shape.text_frame.paragraphs:
+                        for run in paragraph.runs:
+                            if run.text.strip():
+                                text_runs.append(run.text)
+            
+            # Join all text runs with newlines
+            return '\n'.join(text_runs)
+            
+        except Exception as e:
+            logger.error(f"Error reading PPTX file {file_path}: {e}")
+            return None
     
     def clean_text(self, text: str) -> str:
         """Clean and normalize text with enhanced cleaning."""
@@ -279,6 +316,8 @@ class TextProcessor:
             text = self.extract_from_docx(file_path)
         elif ext == '.md':
             text = self.extract_from_md(file_path)
+        elif ext == '.pptx':
+            text = self.extract_from_pptx(file_path)
         else:
             logger.warning(f"Unsupported file type: {ext}")
             return None
@@ -334,7 +373,7 @@ class DataPreprocessor:
         if not self.raw_data_dir.exists():
             raise FileNotFoundError(f"Raw data directory not found: {self.raw_data_dir}")
         
-        supported_extensions = ['.txt', '.pdf', '.docx', '.md']
+        supported_extensions = ['.txt', '.pdf', '.docx', '.md', '.pptx']
         files = []
         
         for ext in supported_extensions:

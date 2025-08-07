@@ -9,6 +9,7 @@ pandas>=2.0.0,<3.0.0
 numpy>=1.24.0,<2.0.0
 PyMuPDF>=1.23.0,<2.0.0  # fitz
 docx2txt>=0.8,<1.0.0
+python-pptx>=0.6.21,<1.0.0  # For PPTX support
 markdown>=3.4.0,<4.0.0
 beautifulsoup4>=4.12.0,<5.0.0
 
