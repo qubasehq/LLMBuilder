@@ -1,6 +1,15 @@
-# Data directories
-data/raw/**
+# Data directories - exclude all content
+data/raw/**/*
+!data/raw/
 !data/raw/.gitkeep
+
+# Specific content folders to exclude (add more as needed)
+data/raw/*/content/
+data/raw/*/content/**/*
+data/raw/*/*/content/
+data/raw/*/*/content/**/*
+
+# Other data directories
 data/processed/
 data/cleaned/
 data/tokenized/
