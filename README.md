@@ -2,7 +2,32 @@
 
 A production-ready implementation for training and fine-tuning Large Language Models from scratch. This project provides a complete pipeline for data preprocessing, tokenizer training, model training, and evaluation, with optimizations for both CPU and GPU environments.
 
-## Key Features
+## Table of Contents
+
+- [Key Features](#key-features)
+- [System Requirements](#system-requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [1. Prepare Your Data](#1-prepare-your-data)
+  - [2. Run the Pipeline](#2-run-the-pipeline)
+  - [3. Run Specific Stages](#3-run-specific-stages)
+- [Project Structure](#project-structure)
+- [Fine-tuning](#fine-tuning)
+- [Text Generation](#text-generation)
+- [Configuration](#configuration)
+- [Advanced Usage](#advanced-usage)
+  - [CPU Optimization](#cpu-optimization)
+  - [Data Processing](#data-processing)
+  - [Training API](#training-api)
+- [Monitoring](#monitoring-training)
+- [Performance Optimization](#performance-optimization)
+- [Troubleshooting](#troubleshooting)
+- [Model Architecture](#model-architecture)
+- [Pre-trained Models](#pre-trained-models)
+- [License](#license)
+- [Contributing](#contributing)
+
+## Key Features <a name="key-features"></a>
 
 - **End-to-End Training Pipeline**: Complete workflow from raw data to trained model
 - **CPU Optimization**: Efficient multi-threaded training on CPU
@@ -22,7 +47,7 @@ A production-ready implementation for training and fine-tuning Large Language Mo
 - 2GB+ free disk space
 - Windows, Linux, or macOS
 
-## Installation
+## Installation <a name="installation"></a>
 
 1. Clone the repository:
    ```bash
@@ -86,7 +111,7 @@ For detailed instructions, see the [Complete Usage Guide](USAGE.md) which includ
 - Platform-specific commands
 - Troubleshooting guide
 
-## Project Structure
+## Project Structure <a name="project-structure"></a>
 
 ```
 LLMBuilder/
@@ -119,9 +144,9 @@ LLMBuilder/
 └── requirements.txt     # Dependencies
 ```
 
-## Quick Start
+## Quick Start <a name="quick-start"></a>
 
-### 1. Prepare Your Data
+### 1. Prepare Your Data <a name="1-prepare-your-data"></a>
 
 #### Option 1: Download Sample Data
 ```bash
@@ -141,7 +166,7 @@ Place your documents in `data/raw/`:
 - PDF files (.pdf)
 - Word documents (.docx)
 
-### 2. Run the Pipeline
+### 2. Run the Pipeline <a name="2-run-the-pipeline"></a>
 
 #### Linux/macOS:
 ```bash
@@ -159,7 +184,7 @@ Or using PowerShell:
 .\run.ps1
 ```
 
-### 3. Run Specific Stages
+### 3. Run Specific Stages <a name="3-run-specific-stages"></a>
 
 Run individual pipeline stages as needed:
 
@@ -185,7 +210,7 @@ Run individual pipeline stages as needed:
 
 On Windows, use `run.bat` or `run.ps1` with the same stage names.
 
-## Fine-tuning
+## Fine-tuning <a name="fine-tuning"></a>
 
 To fine-tune the model on your own data:
 
@@ -193,7 +218,7 @@ To fine-tune the model on your own data:
 2. The system will automatically use the latest checkpoint
 3. Fine-tuned models save to `exports/checkpoints/finetuned/`
 
-## Text Generation
+## Text Generation <a name="text-generation"></a>
 
 Run interactive text generation:
 
@@ -206,7 +231,7 @@ Options:
 - `--top_k`: Limit to top-k predictions
 - `--top_p`: Nucleus sampling threshold
 
-## Configuration
+## Configuration <a name="configuration"></a>
 
 Edit `training/config.yaml` to customize model and training settings:
 
@@ -230,9 +255,9 @@ train:
   device: cpu         # cpu or cuda
 ```
 
-## Advanced Usage
+## Advanced Usage <a name="advanced-usage"></a>
 
-### CPU Optimization
+### CPU Optimization <a name="cpu-optimization"></a>
 
 Optimize for CPU training with:
 - Multi-threading
@@ -240,7 +265,7 @@ Optimize for CPU training with:
 - Gradient accumulation
 - MKLDNN acceleration
 
-### Data Processing
+### Data Processing <a name="data-processing"></a>
 
 Example custom preprocessing:
 
@@ -256,7 +281,7 @@ processor = DataPreprocessor(
 )
 ```
 
-### Training API
+### Training API <a name="training-api"></a>
 
 ```python
 from training.train import Trainer
@@ -265,7 +290,7 @@ trainer = Trainer(config_path="training/config.yaml")
 trainer.train()
 ```
 
-## Training Monitoring
+## Training Monitoring <a name="monitoring-training"></a>
 
 ### Logs
 - Console: Real-time progress
@@ -277,7 +302,7 @@ trainer.train()
 - `best_model.pt`: Best validation score
 - `latest.pt`: Most recent checkpoint
 
-## Performance Optimization
+## Performance Optimization <a name="performance-optimization"></a>
 
 ### CPU Training
 - Batch size: 8-32 (adjust for RAM)
@@ -295,7 +320,7 @@ trainer.train()
 - Use larger `block_size` for context
 - Multiple data files improve shuffling
 
-## Troubleshooting
+## Troubleshooting <a name="troubleshooting"></a>
 
 ### Common Issues
 
@@ -322,7 +347,7 @@ trainer.train()
 
 Check `logs/` for detailed error messages.
 
-## Model Architecture
+## Model Architecture <a name="model-architecture"></a>
 
 GPT-style transformer with:
 - Multi-head self-attention
@@ -339,7 +364,7 @@ GPT-style transformer with:
 - Context: 512 tokens
 - Vocabulary: 16K BPE
 
-## Future Enhancements
+## Future Enhancements <a name="future-enhancements"></a>
 
 Planned features:
 - GPU acceleration
@@ -348,7 +373,7 @@ Planned features:
 - More model architectures
 - Additional optimizations
 
-## Pre-trained Models
+## Pre-trained Models <a name="pre-trained-models"></a>
 
 Download models from HuggingFace:
 
@@ -358,11 +383,11 @@ python tools/download_hf_model.py \
   --output-dir ./models/Qwen2.5-Coder-0.5B
 ```
 
-## License
+## License <a name="license"></a>
 
 MIT Licensed. See [LICENSE](LICENSE) for details.
 
-## Contributing
+## Contributing <a name="contributing"></a>
 
 Contributions welcome! Please submit PRs or open issues.
 
