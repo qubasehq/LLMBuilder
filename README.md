@@ -1,4 +1,4 @@
-# LLM Training Framework
+# LLMBuilder
 
 A production-ready implementation for training and fine-tuning Large Language Models from scratch. This project provides a complete pipeline for data preprocessing, tokenizer training, model training, and evaluation, with optimizations for both CPU and GPU environments.
 
