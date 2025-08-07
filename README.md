@@ -115,33 +115,60 @@ For detailed instructions, see the [Complete Usage Guide](USAGE.md) which includ
 
 ```
 LLMBuilder/
-├── data/                  # Data directories
-│   ├── raw/              # Raw input files (.txt, .pdf, .docx)
-│   ├── cleaned/          # Processed text files
-│   └── tokens/           # Tokenized datasets
+├── data/                   # Data directories
+│   ├── raw/               # Raw input files (.txt, .pdf, .docx)
+│   ├── cleaned/           # Processed text files
+│   └── tokens/            # Tokenized datasets
+│   ├── download_data.py   # Script to download datasets
+│   └── SOURCES.md         # Data sources documentation
+│
+├── debug_scripts/         # Debugging utilities
+│   ├── debug_loader.py    # Data loading debugger
+│   ├── debug_training.py  # Training process debugger
+│   └── debug_timestamps.py # Timing analysis
+│
+├── eval/                  # Model evaluation
+│   └── eval.py           # Evaluation scripts
+│
+├── exports/               # Output directories
+│   ├── checkpoints/      # Training checkpoints
+│   ├── gguf/             # GGUF model exports
+│   ├── onnx/             # ONNX model exports
+│   └── tokenizer/        # Saved tokenizer files
+│
+├── finetune/             # Fine-tuning scripts
+│   ├── finetune.py      # Fine-tuning implementation
+│   └── __init__.py      # Package initialization
+│
+├── logs/                 # Training and evaluation logs
+│
 ├── model/                # Model architecture
-│   └── gpt_model.py      # GPT model implementation
+│   └── gpt_model.py     # GPT model implementation
+│
+├── tools/                # Utility scripts
+│   ├── analyze_data.ps1  # PowerShell data analysis
+│   ├── analyze_data.sh   # Bash data analysis
+│   ├── download_hf_model.py # HuggingFace model downloader
+│   └── export_gguf.py    # GGUF export utility
+│
 ├── training/             # Training pipeline
-│   ├── config.yaml       # Configuration
-│   ├── preprocess.py     # Data preprocessing
+│   ├── dataset.py       # Dataset handling
+│   ├── preprocess.py    # Data preprocessing
+│   ├── quantization.py  # Model quantization
+│   ├── train.py         # Main training script
 │   ├── train_tokenizer.py # Tokenizer training
-│   ├── train.py          # Model training
-│   ├── quantization.py   # Model quantization
-│   ├── dataset.py        # Dataset handling
-│   └── utils.py          # Utility functions
-├── eval/                 # Evaluation scripts
-│   └── eval.py
-├── tools/                # Additional tools
-│   ├── download_hf_model.py
-│   └── export_gguf.py
-├── exports/              # Output files
-│   ├── checkpoints/     # Training checkpoints
-│   └── models/          # Exported models
-├── run.sh               # Linux/Mac script
-├── run.bat              # Windows batch script
-├── run.ps1              # PowerShell script
+│   └── utils.py         # Training utilities
+│
+├── .gitignore           # Git ignore rules
+├── config.json          # Main configuration
+├── config_cpu_small.json # Small CPU config
+├── config_gpu.json      # GPU configuration
+├── inference.py         # Inference script
 ├── quantize_model.py    # Model quantization
-└── requirements.txt     # Dependencies
+├── README.md           # This file
+├── requirements.txt    # Python dependencies
+├── run.ps1            # PowerShell runner
+└── run.sh             # Bash runner
 ```
 
 ## Quick Start <a name="quick-start"></a>
