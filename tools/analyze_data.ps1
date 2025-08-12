@@ -10,16 +10,14 @@
 #>
 
 # Get the root directory of the project
-$projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$projectRoot = Split-Path -Parent $PSScriptRoot
 $dataRoot = Join-Path $projectRoot "data"
 
 # Define data directories to analyze
 $dataDirs = @(
     @{ Name = "Raw"; Path = "raw" },
     @{ Name = "Cleaned"; Path = "cleaned" },
-    @{ Name = "Processed"; Path = "processed" },
-    @{ Name = "Tokenized"; Path = "tokenized" },
-    @{ Name = "Vocab"; Path = "vocab" }
+    @{ Name = "Tokens"; Path = "tokens" }
 )
 
 # Function to format file size in a human-readable format

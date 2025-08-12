@@ -83,7 +83,7 @@ check_dependencies() {
 setup_directories() {
     print_status "Setting up directories..."
     
-    directories=("data/raw" "data/cleaned" "data/tokens" "tokenizer" "exports/checkpoints" "exports/gguf" "exports/onnx" "logs")
+    directories=("data/raw" "data/cleaned" "data/tokens" "data/deduped" "data/finetune" "exports/tokenizer" "exports/checkpoints" "exports/gguf" "exports/onnx" "logs")
     
     for dir in "${directories[@]}"; do
         mkdir -p "$dir"
@@ -249,14 +249,104 @@ run_model_training() {
     fi
 }
 
-# Function to run evaluation
-run_evaluation() {
+# Function to run enhanced document ingestion
+run_ingestion() {
+    print_status "=== Starting Enhanced Document Ingestion ==="
+    
+    if [ ! -d "data/raw" ]; then
+        print_error "Raw data directory not found: data/raw"
+        return 1
+    fi
+    
+    # Check for supported file types
+    supported_files=$(find data/raw -type f \( -name "*.txt" -o -name "*.pdf" -o -name "*.docx" -o -name "*.html" -o -name "*.epub" -o -name "*.md" \) | wc -l)
+    
+    if [ "$supported_files" -eq 0 ]; then
+        print_warning "No supported files found in data/raw"
+        print_status "Supported formats: TXT, PDF, DOCX, HTML, EPUB, Markdown"
+        return 1
+    fi
+    
+    print_status "Found $supported_files supported files for ingestion"
+    
+    if python scripts/run_ingestion.py --input data/raw --output data/cleaned --recursive --verbose; then
+        print_success "Document ingestion completed"
+    else
+        print_error "Document ingestion failed"
+        exit 1
+    fi
+}
+
+# Function to run deduplication
+run_deduplication() {
+    print_status "=== Starting Data Deduplication ==="
+    
+    if [ ! -d "data/cleaned" ] || [ -z "$(find data/cleaned -type f 2>/dev/null)" ]; then
+        print_error "No cleaned data found in data/cleaned"
+        print_error "Please run ingestion or preprocessing first"
+        return 1
+    fi
+    
+    mkdir -p data/deduped
+    
+    if python data/dedup.py --input-dir data/cleaned --output-dir data/deduped --similarity-threshold 0.85; then
+        print_success "Deduplication completed"
+    else
+        print_error "Deduplication failed"
+        exit 1
+    fi
+}
+
+# Function to run GGUF conversion
+run_gguf_conversion() {
+    print_status "=== Starting GGUF Conversion ==="
+    
+    CHECKPOINT_DIR="exports/checkpoints"
     if [ ! -d "$CHECKPOINT_DIR" ] || [ -z "$(ls -A $CHECKPOINT_DIR/*.pt 2>/dev/null)" ]; then
         print_error "No model checkpoints found in $CHECKPOINT_DIR"
         return 1
     fi
     
-    print_status "Starting model evaluation..."
+    # Get the latest checkpoint
+    LATEST_CHECKPOINT=$(ls -t $CHECKPOINT_DIR/*.pt 2>/dev/null | head -1)
+    
+    mkdir -p exports/gguf
+    
+    if python tools/conversion_pipeline.py "$LATEST_CHECKPOINT" exports/gguf --quantization f16 q8_0 q4_0 --tokenizer exports/tokenizer; then
+        print_success "GGUF conversion completed"
+    else
+        print_error "GGUF conversion failed"
+        exit 1
+    fi
+}
+
+# Function to run comprehensive tests
+run_tests() {
+    print_status "=== Running Comprehensive Test Suite ==="
+    
+    # Check if pytest is available
+    if ! python -m pytest --version >/dev/null 2>&1; then
+        print_warning "pytest not found. Installing..."
+        python -m pip install pytest
+    fi
+    
+    if python -m pytest tests/ -v --tb=short; then
+        print_success "All tests passed successfully"
+    else
+        print_error "Tests failed"
+        exit 1
+    fi
+}
+
+# Function to run evaluation
+run_evaluation() {
+    print_status "=== Starting Model Evaluation ==="
+    
+    CHECKPOINT_DIR="exports/checkpoints"
+    if [ ! -d "$CHECKPOINT_DIR" ] || [ -z "$(ls -A $CHECKPOINT_DIR/*.pt 2>/dev/null)" ]; then
+        print_error "No model checkpoints found in $CHECKPOINT_DIR"
+        return 1
+    fi
     
     if python eval/eval.py; then
         print_success "Model evaluation completed"
@@ -268,6 +358,9 @@ run_evaluation() {
 
 # Function to run fine-tuning
 run_finetuning() {
+    print_status "=== Starting Model Fine-tuning ==="
+    
+    CHECKPOINT_DIR="exports/checkpoints"
     if [ ! -d "$CHECKPOINT_DIR" ] || [ -z "$(ls -A $CHECKPOINT_DIR/*.pt 2>/dev/null)" ]; then
         print_error "No base model checkpoints found in $CHECKPOINT_DIR"
         print_error "Please train a model first or specify a pre-trained model path"
@@ -281,10 +374,9 @@ run_finetuning() {
         return 1
     fi
     
-    print_status "Starting model fine-tuning..."
-    
     # Get the latest checkpoint
     LATEST_CHECKPOINT=$(ls -t $CHECKPOINT_DIR/*.pt 2>/dev/null | head -1)
+    TOKENIZER_DIR="exports/tokenizer"
     
     if python finetune/finetune.py --config config.json --pretrained-model "$LATEST_CHECKPOINT" --train-data "$FINETUNE_DATA_DIR" --tokenizer-dir "$TOKENIZER_DIR"; then
         print_success "Model fine-tuning completed"
@@ -296,15 +388,17 @@ run_finetuning() {
 
 # Function to run inference
 run_inference() {
+    print_status "=== Starting Interactive Inference ==="
+    
+    CHECKPOINT_DIR="exports/checkpoints"
     if [ ! -d "$CHECKPOINT_DIR" ] || [ -z "$(ls -A $CHECKPOINT_DIR/*.pt 2>/dev/null)" ]; then
         print_error "No model checkpoints found in $CHECKPOINT_DIR"
         return 1
     fi
     
-    print_status "Starting interactive inference..."
-    
     # Get the latest checkpoint
     LATEST_CHECKPOINT=$(ls -t $CHECKPOINT_DIR/*.pt 2>/dev/null | head -1)
+    TOKENIZER_DIR="exports/tokenizer"
     
     if python inference.py --model "$LATEST_CHECKPOINT" --tokenizer "$TOKENIZER_DIR" --config config.json --interactive; then
         print_success "Inference session completed"
@@ -320,15 +414,17 @@ show_help() {
     echo "Usage: $0 [stage] [options]"
     echo ""
     echo "Stages:"
+    echo "  ingest      - Enhanced document ingestion (HTML, EPUB, PDF with OCR)"
+    echo "  dedup       - Deduplication with hash and embedding methods"
     echo "  preprocess  - Run data preprocessing only"
     echo "  tokenizer   - Run tokenizer training only"
     echo "  train       - Run model training only"
     echo "  eval        - Run model evaluation only"
     echo "  finetune    - Fine-tune a pre-trained model"
     echo "  inference   - Run interactive text generation"
+    echo "  gguf        - Convert model to GGUF format with quantization"
     echo "  download    - Download a HuggingFace model"
-    echo "  all         - Run all main stages (default)"
-    echo "  eval        - Run model evaluation only"
+    echo "  test        - Run comprehensive test suite"
     echo "  all         - Run complete pipeline (default)"
     echo ""
     echo "Options:"
@@ -345,7 +441,7 @@ show_help() {
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        preprocess|tokenizer|train|eval|finetune|inference|download|all)
+        preprocess|tokenizer|train|eval|finetune|inference|download|ingest|dedup|gguf|test|all)
             STAGE="$1"
             shift
             ;;
@@ -357,7 +453,7 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=true
             shift
             ;;
-        --help|-h)
+        --help)
             show_help
             exit 0
             ;;
@@ -369,22 +465,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Main execution
+# Main execution logic
 main() {
     print_status "Starting LLM Training Pipeline"
     print_status "Stage: $STAGE"
+    print_status "CPU Only: $CPU_ONLY"
     
-    if [ "$CPU_ONLY" = true ]; then
-        print_status "CPU-only mode enabled"
-    fi
-    
-    # Setup
-    check_python
-    check_dependencies
-    setup_directories
-    
-    # Execute based on stage
-    case $STAGE in
+    case "$STAGE" in
+        "ingest")
+            run_ingestion
+            ;;
+        "dedup")
+            run_deduplication
+            ;;
         "preprocess")
             run_preprocessing
             ;;
@@ -403,33 +496,33 @@ main() {
         "inference")
             run_inference
             ;;
-        "download")
-            run_download
+        "gguf")
+            run_gguf_conversion
+            ;;
+        "test")
+            run_tests
             ;;
         "all")
-            run_preprocessing
-            run_tokenizer_training
-            run_model_training
-            run_evaluation
+            run_ingestion &&
+            run_deduplication &&
+            run_preprocessing &&
+            run_tokenizer_training &&
+            run_model_training &&
+            run_evaluation &&
+            run_gguf_conversion
             ;;
         *)
-            print_error "Invalid stage: $STAGE"
+            print_error "Unknown stage: $STAGE"
             show_help
             exit 1
             ;;
     esac
-    
-    print_success "Pipeline completed successfully!"
-    print_status "Check the logs/ directory for detailed logs"
-    
-    if [ "$STAGE" = "all" ] || [ "$STAGE" = "train" ]; then
-        print_status "Your trained model is available at: exports/checkpoints/best_model.pt"
-    fi
-    
-    if [ "$STAGE" = "all" ] || [ "$STAGE" = "eval" ]; then
-        print_status "Evaluation results are in the logs"
-    fi
 }
 
-# Run main function
+# Initialize and run
+check_python
+check_dependencies
+setup_directories
+check_system_resources
+
 main

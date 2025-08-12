@@ -1,925 +1,685 @@
-# 📖 **Complete LLMBuilder Training Guide**
+# LLMBuilder Usage Guide
 
-**Welcome to your step-by-step journey with LLMBuilder by Qubasehq - from raw data to a working AI!** No technical background needed - we'll explain everything as we go!
+This comprehensive guide covers all aspects of using LLMBuilder, from basic setup to advanced features.
 
-## 📑 Table of Contents
+## Table of Contents
 
-### 🚀 Getting Started
-- [Quick Start](#-quick-start-30-seconds)
-- [System Requirements](#-system-requirements)
-- [Installation](#-installation)
+- [Quick Start](#quick-start)
+- [Enhanced Pipeline Stages](#enhanced-pipeline-stages)
+- [Document Ingestion](#document-ingestion)
+- [Deduplication](#deduplication)
+- [Training](#training)
+- [GGUF Conversion](#gguf-conversion)
+- [Testing](#testing)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [Advanced Usage](#advanced-usage)
 
-### 🔄 Training Pipeline
-1. [Data Preparation](#-step-1-data-preparation)
-2. [Tokenizer Training](#-step-2-tokenizer-training)
-3. [Model Training](#-step-3-model-training)
-4. [Model Evaluation](#-step-4-model-evaluation)
-5. [Fine-tuning](#-step-5-fine-tuning)
-6. [Inference](#-step-6-interactive-inference)
+## Quick Start
 
-### 🛠️ Advanced Usage
-- [Large Dataset Handling](#-handling-large-datasets-5-10gb)
-- [Configuration Guide](#-configuration-guide)
-- [Troubleshooting](#-troubleshooting)
-- [Performance Tuning](#-performance-optimization)
-
----
-
-**What you'll achieve:**
-- ✅ Turn 10 PDF/TXT/DOCX files into a working AI
-- ✅ Train a 50-million parameter model
-- ✅ Get interactive AI responses
-- ✅ Learn by doing (not just reading)
-
-**Time needed:** 2-4 hours (perfect for a weekend project!)
-
----
-
-## 🏗️ **Before We Start: What Are We Building?**
-
-Imagine you're teaching a child to read and write. We're doing the same thing, but with a computer:
-
-1. **Preprocessing** = Teaching the computer to read your files
-2. **Tokenizer** = Teaching it the alphabet (16,000 "letters")
-3. **Training** = Teaching it to write sentences
-4. **Evaluation** = Testing how well it writes
-5. **Fine-tuning** = Teaching it your specific style
-6. **Inference** = Having conversations with your AI
-
----
-
-## 📁 **Step 0: Getting Your Files Ready**
-
-**Don't worry about technical stuff yet!** Just do this:
-
-### **🚀 Smart Data Downloader (NEW!)**
-
-**The easiest way to get started - download any topic automatically!**
+### 1. Basic Setup
 
 ```bash
-# Download sample corpus with diverse topics
-python data/download_data.py --corpus
+# Clone and setup
+git clone <repository-url>
+cd LLMBuilder
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# or
+.\venv\Scripts\activate   # Windows
 
-# Download specific topics
-python data/download_data.py --topic technology --count 5
-python data/download_data.py --topic literature --count 3
-python data/download_data.py --topic science --count 4
+# Install dependencies
+pip install -r requirements.txt
 
-# Download specific classic books
-python data/download_data.py --book 1342 --book 84 --book 11
-
-# Available topics:
-# technology, science, literature, business, health, education
-# environment, sports, food, travel, religion, language, media
+# Install Tesseract OCR (see INSTALL_TESSERACT.md for details)
+sudo apt-get install tesseract-ocr  # Ubuntu
+brew install tesseract              # macOS
 ```
 
-### **📚 15+ Topics Available:**
-- **Technology** - Python, AI/ML, programming docs
-- **Literature** - Pride & Prejudice, Frankenstein, Alice in Wonderland
-- **Science** - Research papers, scientific documentation
-- **Business** - Economics, finance, entrepreneurship
-- **Health** - Medical journals, wellness guides
-- **History** - Historical documents, world history
-- **And 10+ more topics!**
+### 2. Prepare Your Data
 
-### **📊 Sample Downloads:**
+Place your documents in `data/raw/`. Supported formats:
+- **Text**: `.txt`, `.md`
+- **Documents**: `.pdf`, `.docx`
+- **Web**: `.html`
+- **E-books**: `.epub`
+
+### 3. Run the Complete Pipeline
+
 ```bash
-# Get 5 classic novels
-python data/download_data.py --topic literature --count 5
+# Linux/macOS
+./run.sh all
 
-# Get 3 science papers
-python data/download_data.py --topic science --count 3
+# Windows PowerShell
+.\run.ps1 -Stage all
 
-# Get business/economics content
-python data/download_data.py --topic business --count 4
-
-# Get complete sample corpus
-python data/download_data.py --corpus
+# Windows Command Prompt
+run.bat all
 ```
 
-### **📁 Manual File Addition (Alternative)**
+## Enhanced Pipeline Stages
 
-**For Windows Users:**
-1. Open File Explorer
-2. Go to `D:\LLM\project\data\raw\`
-3. Drag and drop your files here
+### Stage Overview
 
-**For Mac/Linux Users:**
-1. Open Terminal
-2. Run: `cd ~/LLM/project/data/raw`
-3. Copy your files: `cp ~/Downloads/*.pdf .`
+The enhanced pipeline includes these stages:
 
-**Your files should be:**
-- PDF files (reports, books, papers)
-- TXT files (plain text)
-- DOCX files (Word documents)
-- **Total size:** 1MB-100MB works great
+1. **`ingest`** - Enhanced document ingestion
+2. **`dedup`** - Intelligent deduplication
+3. **`preprocess`** - Traditional preprocessing (optional)
+4. **`tokenizer`** - Tokenizer training
+5. **`train`** - Model training
+6. **`eval`** - Model evaluation
+7. **`gguf`** - GGUF conversion
+8. **`test`** - Comprehensive testing
 
-**What if I don't have files?** Use the smart downloader above!
+### Running Individual Stages
 
-### **🎯 Quick Start Recommendation:**
 ```bash
-# 1. Download sample data (easiest)
-python data/download_data.py --corpus
+# Enhanced document processing
+./run.sh ingest
 
-# 2. Start training
-./run.sh preprocess
+# Remove duplicates
+./run.sh dedup
 
-# 3. Continue with tokenizer and training
+# Train tokenizer
 ./run.sh tokenizer
+
+# Train model
 ./run.sh train
+
+# Convert to GGUF
+./run.sh gguf
 ```
 
----
+## Document Ingestion
 
----
+### Basic Ingestion
 
-## 🔄 Stage-by-Stage Execution
-
-## 🎯 **Step 1: Data Preparation (LLMBuilder)**
-**What this does:** Gets your raw data ready for training with LLMBuilder by Qubasehq.
-
-### **How to Run:**
-
-**🐧 Linux/Mac:**
 ```bash
-./run.sh preprocess
+# Process all files in data/raw
+./run.sh ingest
+
+# Or run directly
+python scripts/run_ingestion.py --input data/raw --output data/cleaned
 ```
 
-**🪟 Windows (PowerShell):**
-```powershell
-.\run.ps1 -Stage preprocess
-```
+### Advanced Ingestion Options
 
-**🪟 Windows (Command Prompt):**
-```cmd
-run.bat preprocess
-```
-
-### **What You'll See:**
-
-**Good output (what you want):**
-```
-=== Starting Data Preprocessing ===
-[INFO] Processing 10 files...
-[INFO] Extracted text from sample1.pdf (2.3MB)
-[INFO] Extracted text from sample2.txt (1.1MB)
-[INFO] Extracted text from sample3.docx (850KB)
-... (more files)
-[INFO] Combined text file size: 15.7MB
-[SUCCESS] Preprocessing completed
-```
-
-**What this means:** ✅ Your files are being read correctly!
-
-**If you see this error:**
-```
-[ERROR] No data found in data/raw directory!
-```
-**Fix:** Copy your files to `data/raw/` folder and try again.
-
-**What gets created:**
-- `data/cleaned/combined_text.txt` - One big file with all your text
-- `logs/preprocessing.log` - Detailed log of what happened
-
----
-
-## 🎯 **Step 2: Teaching the Computer the Alphabet**
-
-**What this does:** Creates a "dictionary" of 16,000 word pieces from your text.
-
-### **How to Run:**
-
-**🐧 Linux/Mac:**
 ```bash
-./run.sh tokenizer
+# With OCR language support
+python scripts/run_ingestion.py \
+  --input data/raw \
+  --output data/cleaned \
+  --ocr-lang eng fra deu spa \
+  --max-size 100 \
+  --recursive \
+  --verbose
 ```
 
-**🪟 Windows (PowerShell):**
-```powershell
-.\run.ps1 -Stage tokenizer
-```
+**Parameters:**
+- `--input`: Input directory with documents
+- `--output`: Output directory for cleaned text
+- `--ocr-lang`: OCR languages (default: eng)
+- `--max-size`: Maximum file size in MB (default: 100)
+- `--recursive`: Process subdirectories
+- `--verbose`: Enable detailed logging
 
-**🪟 Windows (Command Prompt):**
-```cmd
-run.bat tokenizer
-```
+### Supported Formats
 
-### **What You'll See:**
-
-**Good output:**
-```
-=== Stage 2: Tokenizer Training ===
-[INFO] Training tokenizer on 15.7MB text...
-[INFO] Vocabulary size: 16,000 tokens
-[SUCCESS] Tokenizer created successfully!
-```
-
-**What this means:** ✅ The computer learned your writing style!
-
-**What gets created:**
-- `tokenizer/tokenizer.model` - The brain's dictionary
-- `tokenizer/tokenizer.json` - Settings file
-
-**If you see this:**
-```
-[ERROR] No cleaned data found. Please run preprocessing first.
-```
-**Fix:** Run preprocessing first (Step 1)!
-
----
-
-## 🎯 **Step 3: Training Your AI**
-
-**What this does:** Actually teaches the computer to write like your documents.
-
-### **How to Run:**
-
-**🐧 Linux/Mac:**
+#### PDF Processing
 ```bash
+# Automatic OCR fallback for scanned PDFs
+python scripts/run_ingestion.py \
+  --input data/pdfs \
+  --output data/cleaned \
+  --ocr-lang eng
+```
+
+#### HTML Processing
+```bash
+# Clean HTML with BeautifulSoup
+python scripts/run_ingestion.py \
+  --input data/html \
+  --output data/cleaned
+```
+
+#### EPUB Processing
+```bash
+# Extract text from e-books
+python scripts/run_ingestion.py \
+  --input data/ebooks \
+  --output data/cleaned
+```
+
+### Example Output
+
+```
+INGESTION RESULTS
+==================================================
+Total files found: 25
+Successfully processed: 23
+Failed to process: 2
+Success rate: 92.0%
+
+Total content extracted:
+  Characters: 1,234,567
+  Words: 185,432
+
+Output directory: data/cleaned
+Supported formats: txt, pdf, docx, html, epub, md
+```
+
+## Deduplication
+
+### Basic Deduplication
+
+```bash
+# Run both hash and embedding deduplication
+./run.sh dedup
+
+# Or run directly
+python data/dedup.py \
+  --input-dir data/cleaned \
+  --output-dir data/deduped
+```
+
+### Advanced Deduplication
+
+```bash
+# Hash-only deduplication (faster)
+python data/dedup.py \
+  --input-dir data/cleaned \
+  --output-dir data/deduped \
+  --hash-only
+
+# Embedding-only deduplication (semantic)
+python data/dedup.py \
+  --input-dir data/cleaned \
+  --output-dir data/deduped \
+  --embedding-only \
+  --similarity-threshold 0.85
+
+# Custom similarity threshold
+python data/dedup.py \
+  --input-dir data/cleaned \
+  --output-dir data/deduped \
+  --similarity-threshold 0.90
+```
+
+### Deduplication Methods
+
+#### Hash-based (Exact Duplicates)
+- Normalizes whitespace, case, punctuation
+- MD5/SHA256 hashing
+- Very fast processing
+- Finds exact matches
+
+#### Embedding-based (Near Duplicates)
+- Uses sentence-transformers
+- Semantic similarity detection
+- Configurable threshold
+- Finds similar content
+
+### Example Output
+
+```
+=== Deduplication Results ===
+Input files: 150
+Output files: 127
+Exact duplicates removed: 18
+Near duplicates removed: 5
+Processing time: 45.2s
+Character reduction: 2,456,789 -> 2,123,456
+```
+
+## Training
+
+### Basic Training
+
+```bash
+# Complete training pipeline
 ./run.sh train
+
+# Or run individual components
+python training/train_tokenizer.py
+python training/train.py
 ```
 
-**🪟 Windows (PowerShell):**
-```powershell
-.\run.ps1 -Stage train
-```
+### Custom Training Configuration
 
-**🪟 Windows (Command Prompt):**
-```cmd
-run.bat train
-```
-
-### **What You'll See:**
-
-**During training (this takes 2-4 hours):**
-```
-=== Stage 3: Model Training ===
-[INFO] Training 50M parameter model...
-Epoch 1/10 - Loss: 3.421 → 2.187
-Epoch 2/10 - Loss: 2.187 → 1.943
-Epoch 3/10 - Loss: 1.943 → 1.654
-... (keeps going)
-[SUCCESS] Training completed! Best model saved.
-Model size: 197MB
-```
-
-**What this means:** ✅ Your AI is learning! Lower loss = better learning.
-
-**What gets created:**
-- `exports/checkpoints/best_model.pt` - Your trained AI brain
-- `exports/checkpoints/latest_model.pt` - Latest version
-- `logs/training.log` - Detailed training log
-
-**Pro tip:** Grab a coffee! This takes time but you can watch it learn.
-
----
-
-## 🎯 **Step 4: Testing Your AI**
-
-**What this does:** Checks how well your AI writes.
-
-### **How to Run:**
-
-**🐧 Linux/Mac:**
 ```bash
-./run.sh eval
+# Use specific config
+python training/train.py --config config_gpu.json
+
+# Override specific parameters
+python training/train.py \
+  --config config.json \
+  --batch-size 16 \
+  --learning-rate 0.0001 \
+  --num-epochs 5
 ```
 
-**🪟 Windows (PowerShell):**
-```powershell
-.\run.ps1 -Stage eval
-```
+### Training Monitoring
 
-**🪟 Windows (Command Prompt):**
-```cmd
-run.bat eval
-```
-
-### **What You'll See:**
-
-**Good results:**
-```
-=== Stage 4: Model Evaluation ===
-[INFO] Running evaluation...
-Perplexity: 12.43 (lower is better - under 20 is good!)
-BLEU Score: 0.67 (higher is better - over 0.6 is great!)
-
-Generation Example:
-Prompt: "The future of AI is"
-Generated: "The future of AI is bright and full of possibilities..."
-
-[SUCCESS] Evaluation completed!
-```
-
-**What these numbers mean:**
-- **Perplexity:** How confused your AI is (lower = better)
-- **BLEU Score:** How good the writing is (higher = better)
-
----
-
-## 🎯 **Step 5: Making It Even Better**
-
-**What this does:** Teaches your AI your specific style.
-
-### **Setup First:**
-Create a folder: `data/finetune/`
-Add your special training files:
-```
-data/finetune/
-├── my_company_docs.txt
-├── technical_manuals.txt
-└── personal_writing.txt
-```
-
-### **How to Run:**
-
-**🐧 Linux/Mac:**
 ```bash
-./run.sh finetune
+# Monitor training progress
+tail -f logs/training.log
+
+# View training metrics
+cat logs/training_history.json | jq '.[-1]'
+
+# Check GPU usage (if available)
+nvidia-smi
 ```
 
-**🪟 Windows (PowerShell):**
-```powershell
-.\run.ps1 -Stage finetune
-```
+### Training Configurations
 
-### **What You'll See:**
-
-```
-=== Starting Fine-tuning ===
-[INFO] Loading pre-trained model...
-[INFO] Fine-tuning on your custom data...
-Epoch 1/5 - Loss: 1.943 → 1.234
-[SUCCESS] Fine-tuned model saved to exports/checkpoints/finetuned/
-```
-
-**What this means:** ✅ Your AI now knows your specific style!
-
----
-
-## 🎯 **Step 6: Talking to Your AI**
-
-**What this does:** Chat with your trained AI!
-
-### **How to Run:**
-
-**🐧 Linux/Mac:**
+#### Small CPU Training
 ```bash
-./run.sh inference
+python training/train.py --config config_cpu_small.json
 ```
 
-**🪟 Windows (PowerShell):**
-```powershell
-.\run.ps1 -Stage inference
-```
-
-### **What You'll See:**
-
-```
-=== Interactive Inference ===
-Model loaded successfully!
-
-Enter prompt: Write a Python function to sort a list
-
-Generated Response:
-def sort_list(input_list):
-    """Sort a list in ascending order."""
-    return sorted(input_list)
-
-# Example usage:
-numbers = [3, 1, 4, 1, 5, 9, 2, 6]
-sorted_numbers = sort_list(numbers)
-print(sorted_numbers)  # Output: [1, 1, 2, 3, 4, 5, 6, 9]
-
-Continue? (y/n): y
-
-Enter prompt: What did you learn from my files?
-[AI responds based on your specific documents...]
-```
-
-**This is the magic moment!** You're literally talking to an AI you trained yourself!
-
----
-
-## 🎯 **Bonus: Downloading Cool Models**
-
-**What this does:** Downloads pre-trained models from the internet.
-
-### **How to Run:**
-
-**🐧 Linux/Mac:**
+#### GPU Training
 ```bash
-./run.sh download
+python training/train.py --config config_gpu.json
 ```
 
-**🪟 Windows (PowerShell):**
-```powershell
-.\run.ps1 -Stage download
-```
-
-### **What You'll See:**
-
-```
-=== Downloading HuggingFace Model ===
-Enter HuggingFace model name: Qwen/Qwen2.5-Coder-0.5B
-Enter output directory: ./models/Qwen2.5-Coder-0.5B
-
-Downloading config.json... ✅
-Downloading model.safetensors... ✅
-Downloading tokenizer.json... ✅
-...
-Download complete! Files saved to: ./models/Qwen2.5-Coder-0.5B/
-```
-
-**Popular models to try:**
-- `Qwen/Qwen2.5-Coder-0.5B` (great for code)
-- `microsoft/DialoGPT-medium` (great for chat)
-- `EleutherAI/gpt-neo-125M` (great for general text)
-
----
-
-## 🚨 **Common Problems & Solutions**
-
-| Problem | What it looks like | Easy fix |
-|---------|-------------------|----------|
-| "No data found" | `[ERROR] No data found in data/raw directory!` | Put your files in `data/raw/` |
-| "Python not found" | `[ERROR] Python is not installed...` | Install Python 3.8+ from python.org |
-| "Out of memory" | CUDA error | Add `--device cpu` to use CPU instead |
-| "Training too slow" | Taking forever | Use fewer files or shorter training |
-| "Files not found" | File not found errors | Check file paths and extensions |
-
----
-
-## 🎯 **Quick Start (30 seconds)**
-
-**Just want to see it work? Do this:**
-
-1. **Add your files** to `data/raw/`
-2. **Run this command:**
-   ```bash
-   ./run.sh all
-   ```
-3. **Come back in 2-4 hours** and chat with your AI!
-
----
-
-## 📊 **What Success Looks Like**
-
-**After running everything, you'll have:**
-- ✅ A trained AI that knows your content
-- ✅ Files you can share with friends
-- ✅ A working chatbot
-- ✅ Bragging rights ("I built this!")
-
-**Your final folder structure:**
-```
-LLM/project/
-├── data/raw/ (your original files)
-├── data/cleaned/combined_text.txt (cleaned text)
-├── tokenizer/tokenizer.model (AI's dictionary)
-├── exports/checkpoints/best_model.pt (your AI brain)
-└── logs/ (detailed logs)
-```
-
-## 🐘 **Handling Large Datasets (5-10GB+)**
-
-**Reality Check:** When you're dealing with 5-10GB of raw data, this isn't a 30-second project anymore. Here's what to expect and how to handle it properly.
-
-### 📊 **Realistic Expectations**
-
-| Data Size | Training Time | RAM Needed | Storage Needed |
-|-----------|---------------|------------|----------------|
-| 100MB     | 2-4 hours     | 4-8GB      | 2-5GB          |
-| 1GB       | 6-12 hours    | 8-16GB     | 10-20GB        |
-| 5GB       | 1-3 days      | 16-32GB    | 50-100GB       |
-| 10GB      | 3-7 days      | 32-64GB    | 100-200GB      |
-
-### 🎯 **Step-by-Step Strategy for Large Data**
-
-#### **Step 1: Data Sampling (Start Small)**
-```bash
-# Start with 100-500MB first
-./run.sh preprocess
-# Check the output size
-ls -lh data/cleaned/combined_text.txt
-```
-
-#### **Step 2: Memory Optimization**
-```bash
-# Edit config.json for large data
+#### Custom Configuration
+```json
 {
+  "model": {
+    "vocab_size": 16000,
+    "embedding_dim": 384,
+    "num_layers": 6,
+    "num_heads": 6,
+    "max_seq_length": 256
+  },
   "training": {
-    "batch_size": 4,        # Reduce from 8
-    "gradient_accumulation_steps": 4,  # Compensate
-    "max_seq_length": 256   # Reduce from 512
+    "batch_size": 8,
+    "learning_rate": 0.0002,
+    "num_epochs": 10
   }
 }
 ```
 
-#### **Step 3: Chunk Processing**
+## GGUF Conversion
+
+### Basic GGUF Conversion
+
 ```bash
-# Process data in chunks instead of all at once
-./run.sh preprocess --chunk-size 100MB
-# This processes 100MB at a time instead of loading everything
+# Convert with default quantization levels
+./run.sh gguf
+
+# Or run directly
+python tools/conversion_pipeline.py \
+  exports/checkpoints/best_model.pt \
+  exports/gguf
 ```
 
-### 🚀 **Large Data Optimization Strategies**
+### Advanced GGUF Conversion
 
-#### **1. Streaming Processing**
 ```bash
-# Instead of loading all data into memory
-# Process line by line or chunk by chunk
-python tools/streaming_preprocess.py --input data/raw/ --chunk-size 100MB
+# Custom quantization levels
+python tools/conversion_pipeline.py \
+  exports/checkpoints/best_model.pt \
+  exports/gguf \
+  --quantization f16 q8_0 q4_0 q4_1 q5_0 \
+  --name "MyModel-v1.0" \
+  --tokenizer exports/tokenizer
+
+# With validation disabled (faster)
+python tools/conversion_pipeline.py \
+  exports/checkpoints/best_model.pt \
+  exports/gguf \
+  --quantization q4_0 \
+  --no-validate
+
+# Save conversion report
+python tools/conversion_pipeline.py \
+  exports/checkpoints/best_model.pt \
+  exports/gguf \
+  --quantization f16 q8_0 q4_0 \
+  --report exports/gguf/conversion_report.json
 ```
 
-#### **2. Distributed Training (Future)**
+### Quantization Levels
+
+- **f32**: Full precision (largest, highest quality)
+- **f16**: Half precision (good balance)
+- **q8_0**: 8-bit quantization (smaller, good quality)
+- **q4_0**: 4-bit quantization (small, decent quality)
+- **q4_1**: 4-bit with improved accuracy
+- **q5_0**: 5-bit quantization (balance)
+- **q5_1**: 5-bit with improved accuracy
+
+### Example Output
+
+```
+CONVERSION PIPELINE SUMMARY
+============================================================
+Input: exports/checkpoints/best_model.pt
+Output: exports/gguf
+Total time: 127.3s
+Success rate: 100.0% (3/3)
+
+Successful conversions:
+  ✅ f16: 245.7MB, 23.4s (2.1x compression)
+  ✅ q8_0: 123.2MB, 45.8s (4.2x compression)
+  ✅ q4_0: 67.8MB, 58.1s (7.6x compression)
+```
+
+## Testing
+
+### Run All Tests
+
 ```bash
-# When available, use multiple machines
-./run.sh train --distributed --nodes 4
+# Complete test suite
+./run.sh test
+
+# Or run directly
+python -m pytest tests/ -v
 ```
 
-#### **3. Cloud Training**
+### Run Specific Test Categories
+
 ```bash
-# For really large datasets
-# Use cloud instances with 64GB+ RAM
-# Google Colab Pro, AWS, or similar
+# Document ingestion tests
+python -m pytest tests/test_ingestion.py -v
+
+# Deduplication tests
+python -m pytest tests/test_deduplication_pipeline.py -v
+
+# GGUF conversion tests
+python -m pytest tests/test_conversion_pipeline.py -v
+
+# Tokenizer tests
+python -m pytest tests/test_tokenizer_trainer.py -v
 ```
 
-### 📋 **Large Data Checklist**
+### Test with Coverage
 
-**Before you start:**
-- [ ] **Check your RAM:** Run `free -h` (Linux) or Task Manager (Windows)
-- [ ] **Check storage:** Run `df -h` (Linux) or check disk space
-- [ ] **Start small:** Use 100MB first to test the pipeline
-- [ ] **Monitor resources:** Use `htop` (Linux) or Activity Monitor (Mac)
-
-**During training:**
-- [ ] **Monitor logs:** Check `logs/training.log` for memory warnings
-- [ ] **Use checkpoints:** Training will save progress every 1000 steps
-- [ ] **Be patient:** 5GB+ data will take days, not hours
-
-### 🚨 **Warning Signs & Solutions**
-
-| Warning | What it means | Fix |
-|---------|---------------|-----|
-| "Killed 9" | Out of RAM | Reduce batch size, use CPU |
-| "Disk full" | No storage left | Clean up old checkpoints |
-| "Training stalled" | Still processing | Check logs, be patient |
-
-### 🎯 **Pro Tips for Large Data**
-
-#### **1. Sample Your Data First**
 ```bash
-# Take a 1GB sample first
-head -c 1G data/raw/combined.txt > data/raw/sample_1gb.txt
-./run.sh preprocess
+# Install coverage
+pip install pytest-cov
+
+# Run tests with coverage
+python -m pytest tests/ --cov=. --cov-report=html
+
+# View coverage report
+open htmlcov/index.html
 ```
 
-#### **2. Use External Storage**
+### Performance Testing
+
 ```bash
-# Store large files on external drive
-ln -s /mnt/external_drive/data data/raw/large_files
+# Run performance benchmarks
+python -m pytest tests/test_pipeline_basic.py::test_performance -v
+
+# Memory usage testing
+python -m pytest tests/test_simple_pipeline.py::test_memory_usage -v
 ```
 
-#### **3. Cloud Training Setup**
+## Configuration
+
+### Configuration Files
+
+- **`config.json`**: Balanced configuration for standard CPUs
+- **`config_gpu.json`**: Optimized for GPU training
+- **`config_cpu_small.json`**: For limited CPU resources
+
+### Custom Configuration
+
 ```bash
-# For AWS/Google Cloud
-# Use instances with 32GB+ RAM
-# Use spot instances for cost savings
+# Copy existing config
+cp config.json my_config.json
+
+# Edit parameters
+vim my_config.json
+
+# Use custom config
+python training/train.py --config my_config.json
 ```
 
-### 🎯 **Realistic Timeline**
+### Key Configuration Parameters
 
-| Data Size | Your Setup | Realistic Time |
-|-----------|------------|----------------|
-| 5GB       | 8GB RAM    | Not possible (upgrade needed) |
-| 5GB       | 16GB RAM   | 2-3 days |
-| 5GB       | 32GB RAM   | 1-2 days |
-| 10GB      | 16GB RAM   | 4-7 days |
-| 10GB      | 32GB RAM   | 2-4 days |
-
-### 🎯 **Memory Calculator**
-
-**Quick formula:**
+#### Model Architecture
+```json
+{
+  "model": {
+    "vocab_size": 16000,
+    "embedding_dim": 384,
+    "num_layers": 6,
+    "num_heads": 6,
+    "hidden_dim": 1536,
+    "max_seq_length": 256,
+    "dropout": 0.1
+  }
+}
 ```
-RAM_needed = (data_size_GB × 3) + 4GB
-Example: 5GB data needs ~19GB RAM
+
+#### Training Settings
+```json
+{
+  "training": {
+    "batch_size": 8,
+    "learning_rate": 0.0002,
+    "weight_decay": 0.01,
+    "num_epochs": 10,
+    "warmup_steps": 1000,
+    "gradient_clip_norm": 1.0
+  }
+}
 ```
 
-### 🎯 **Your Action Plan**
+#### Device Configuration
+```json
+{
+  "device": {
+    "use_cuda": false,
+    "cuda_device": 0,
+    "cpu_threads": 0,
+    "mixed_precision": false
+  }
+}
+```
 
-**If you have 5-10GB data:**
+## Troubleshooting
 
-1. **Start with 100MB sample** - Test the pipeline
-2. **Check your system specs** - RAM and storage
-3. **Optimize config** - Reduce batch size and sequence length
-4. **Consider cloud training** - For really large datasets
-5. **Be patient** - This is a marathon, not a sprint
+### Common Issues
 
-**Ready for large data?** Start with:
+#### 1. Out of Memory Errors
 ```bash
-# Test with 100MB first
-./run.sh preprocess
-# Check if your system can handle it
+# Reduce batch size
+python training/train.py --config config.json --batch-size 4
+
+# Use smaller model
+python training/train.py --config config_cpu_small.json
+
+# Enable gradient accumulation
+# Edit config.json: "gradient_accumulation_steps": 4
 ```
 
-**Remember:** Large data training is like cooking a big meal - it takes time, but the results are worth it! 🎉
-
----
-
-### **Step 2: Tokenizer Training**
-**Command**:
+#### 2. Slow Processing
 ```bash
-./run.sh tokenizer
+# Check system resources
+htop  # Linux/macOS
+# Task Manager on Windows
+
+# Reduce data size for testing
+head -n 1000 data/cleaned/large_file.txt > data/cleaned/test_file.txt
+
+# Use fewer CPU threads
+export OMP_NUM_THREADS=4
 ```
 
-**What Happens:**
-- **Input**: `data/cleaned/combined_text.txt`
-- **Process**: Trains SentencePiece BPE tokenizer on your data
-- **Output**: `tokenizer/tokenizer.model` + `tokenizer/tokenizer.json`
-
-**Expected Output:**
-```
-=== Stage 2: Tokenizer Training ===
-[INFO] Training tokenizer on 15.7MB text...
-[INFO] Vocabulary size: 16,000 tokens
-[INFO] Tokenizer created successfully!
-```
-
----
-
-### **Step 3: Model Training**
-**Command**:
+#### 3. OCR Issues
 ```bash
-./run.sh train
+# Check Tesseract installation
+tesseract --version
+
+# Install additional language packs
+sudo apt-get install tesseract-ocr-fra tesseract-ocr-deu
+
+# Test OCR manually
+tesseract input.pdf output.txt
 ```
 
-**What Happens:**
-- **Input**: Tokenized data + 50M parameter GPT model
-- **Process**: Trains 12-layer transformer (768 dim, 12 heads)
-- **Output**: `exports/checkpoints/best_model.pt` (≈200MB)
-
-**Expected Output:**
-```
-=== Stage 3: Model Training ===
-[INFO] Training 50M parameter model...
-Epoch 1/10 - Loss: 3.421 → 2.187
-Epoch 2/10 - Loss: 2.187 → 1.943
-...
-[SUCCESS] Training completed! Best model saved.
-Model size: 197MB
-```
-
----
-
-### **Step 4: Evaluation**
-**Command**:
+#### 4. Import Errors
 ```bash
-./run.sh eval
+# Reinstall dependencies
+pip install -r requirements.txt --force-reinstall
+
+# Check Python version
+python --version  # Should be 3.8+
+
+# Install missing packages
+pip install sentence-transformers ebooklib pytesseract
 ```
 
-**What Happens:**
-- **Input**: Trained model + test data
-- **Process**: Calculates perplexity, generation quality
-- **Output**: Evaluation report in console + logs
+### Debug Mode
 
-**Expected Output:**
-```
-=== Stage 4: Model Evaluation ===
-[INFO] Running evaluation...
-Perplexity: 12.43 (lower is better)
-BLEU Score: 0.67
-Generation Example:
-Prompt: "The future of AI is"
-Generated: "The future of AI is bright and full of possibilities..."
-```
-
-**Troubleshooting Guide:**
-
-* **Hallucination Detection:**
-	+ Check if the model is generating text that is not present in the input data.
-	+ Adjust the `temperature` parameter in `config.json` to control the randomness of the generated text.
-	+ Try using a different evaluation metric, such as ROUGE score or METEOR score.
-* **Response Quality Issues:**
-	+ Check if the model is generating responses that are not relevant to the input prompt.
-	+ Adjust the `top_k` and `top_p` parameters in `config.json` to control the diversity of the generated text.
-	+ Try using a different decoding strategy, such as beam search or greedy decoding.
-
----
-
-### **Step 5: Fine-tuning**
-
-#### **📌 Before You Start**
-1. **Prepare Your Data**
-   - Place files in `data/finetune/` (supports `.txt`, `.md`)
-   - Each line should be a complete training example
-   - Recommended: 100-1000 high-quality examples
-
-   ```
-   data/finetune/
-   ├── my_data1.txt
-   ├── my_data2.txt
-   └── more_data.txt
-   ```
-
-2. **Verify Model Availability**
-   - Check available models: `ls -l exports/checkpoints/`
-   - Ensure you have a pre-trained model (`.pt` file)
-
-#### **🛠️ How to Run**
-
-**Option 1: Using run script (Recommended)**
 ```bash
-# Uses latest checkpoint automatically
-./run.sh finetune
+# Enable verbose logging
+python scripts/run_ingestion.py --verbose
+
+# Debug training
+python training/train.py --config config.json --log-level DEBUG
+
+# Test with minimal data
+python training/train.py --config config.json --max-samples 100
 ```
 
-**Option 2: Manual Command**
+### Log Analysis
+
 ```bash
-python finetune/finetune.py \
-  --config config.json \
-  --pretrained-model exports/checkpoints/latest.pt \
-  --train-data data/finetune/ \
-  --tokenizer-dir exports/tokenizer/ \
-  --batch-size 4 \
-  --learning-rate 0.0001
+# Check recent logs
+tail -f logs/training.log
+
+# Search for errors
+grep -i error logs/training.log
+
+# View ingestion statistics
+cat logs/ingestion_stats.json | jq '.'
 ```
 
-#### **⚙️ Key Parameters**
-| Parameter | Description | Recommended |
-|-----------|-------------|-------------|
-| `--pretrained-model` | Path to pre-trained model | Required |
-| `--train-data` | Directory with training files | `data/finetune/` |
-| `--batch-size` | Number of samples per batch | 2-8 (GPU), 1-4 (CPU) |
-| `--learning-rate` | Learning rate for fine-tuning | 0.00001 - 0.0001 |
-| `--num-epochs` | Training epochs | 3-10 |
-| `--max-length` | Max sequence length | 256-1024 |
+## Advanced Usage
 
-#### **📊 Expected Output**
-```
-=== Starting Fine-tuning ===
-[INFO] Loading pre-trained model: exports/checkpoints/model_epoch_10.pt
-[INFO] Using tokenizer from: exports/tokenizer
-[INFO] Found 42 training files in data/finetune/
-[INFO] Training on 1,250 examples
-[INFO] Using batch size: 4, learning rate: 0.0001
-Epoch 1/5 - Loss: 2.345 → 1.876
-Epoch 2/5 - Loss: 1.876 → 1.543
-...
-[SUCCESS] Fine-tuned model saved to: 
-  - exports/checkpoints/finetuned/model_final.pt
-  - exports/checkpoints/finetuned/config.json
-```
+### Batch Processing
 
-#### **🔍 Monitoring Progress**
-- **Logs**: Check `logs/finetune.log`
-- **TensorBoard**: `tensorboard --logdir=exports/logs/finetune`
-- **Output Directory**: `exports/checkpoints/finetuned/`
-
-#### **💡 Pro Tips**
-- Start with a small learning rate (1/10th of training LR)
-- Use smaller batch sizes if you get OOM errors
-- Fine-tune for fewer epochs (3-5) to avoid overfitting
-- Monitor loss - it should decrease steadily
-
-#### **⚠️ Troubleshooting**
-| Issue | Solution |
-|-------|----------|
-| "CUDA out of memory" | Reduce batch size |
-| "No checkpoints found" | Train a model first |
-| "No training data" | Check `data/finetune/` |
-| Loss not decreasing | Try lower learning rate |
-
-#### **📂 Output Files**
-```
-exports/checkpoints/finetuned/
-├── model_final.pt      # Fine-tuned model
-├── config.json         # Training configuration
-└── training_args.bin   # Training arguments
-```
-
-#### **▶️ Next Steps**
-- [Evaluate](#-step-4-model-evaluation) your fine-tuned model
-- Use [inference](#-step-6-interactive-inference) to test generation
-- [Export](#-model-export) for production use
-[INFO] Fine-tuning on your custom data...
-Epoch 1/5 - Loss: 1.943 → 1.234
-[SUCCESS] Fine-tuned model saved to exports/checkpoints/finetuned/
-```
-
----
-
-### **Step 6: Interactive Inference**
-**Command**:
 ```bash
-./run.sh inference
+# Process multiple directories
+for dir in data/raw/*/; do
+  python scripts/run_ingestion.py --input "$dir" --output "data/cleaned/$(basename "$dir")"
+done
+
+# Parallel processing
+find data/raw -name "*.pdf" | xargs -P 4 -I {} python scripts/process_single.py {}
 ```
 
-**What Happens:**
-- **Input**: Latest checkpoint + tokenizer
-- **Process**: Interactive text generation
-- **Output**: Real-time chat interface
+### Custom Preprocessing
 
-**Expected Interaction:**
-```
-=== Interactive Inference ===
-Model loaded successfully!
+```python
+# Custom preprocessing script
+from data.ingest import DocumentIngester
 
-Enter prompt: Write a Python function to sort a list
+ingester = DocumentIngester(
+    output_dir="data/custom_cleaned",
+    ocr_languages=['eng', 'fra'],
+    max_file_size_mb=200
+)
 
-Generated Response:
-def sort_list(input_list):
-    """Sort a list in ascending order."""
-    return sorted(input_list)
-
-# Example usage:
-numbers = [3, 1, 4, 1, 5, 9, 2, 6]
-sorted_numbers = sort_list(numbers)
-print(sorted_numbers)  # Output: [1, 1, 2, 3, 4, 5, 6, 9]
-
-Continue? (y/n): y
-
-Enter prompt: What did you learn from my files?
-[AI responds based on your specific documents...]
+# Process with custom settings
+results = ingester.ingest_directory("data/raw", recursive=True)
+print(f"Processed {results['processed_count']} files")
 ```
 
----
+### Integration with Other Tools
 
-### **Step 7: Download Pre-trained Models**
-**Command**:
 ```bash
-./run.sh download
+# Export to different formats
+python tools/export_onnx.py exports/checkpoints/best_model.pt
+
+# Convert to HuggingFace format
+python tools/export_hf.py exports/checkpoints/best_model.pt exports/hf_model
+
+# Use with llama.cpp
+./llama.cpp/main -m exports/gguf/model_q4_0.gguf -p "Hello, world!"
 ```
 
-**What Happens:**
-- **Interactive prompt** for model name
-- **Downloads** all files for specified model
+### Performance Optimization
 
-**Expected Interaction:**
-```
-=== Downloading HuggingFace Model ===
-Enter HuggingFace model name: Qwen/Qwen2.5-Coder-0.5B
-Enter output directory (default: ./models/Qwen2.5-Coder-0.5B): 
-
-Downloading config.json... ✅
-Downloading model.safetensors... ✅
-Downloading tokenizer.json... ✅
-...
-Download complete! Files saved to: ./models/Qwen2.5-Coder-0.5B/
-```
-
----
-
-## 📊 Complete Pipeline Run
-
-### **All Stages at Once**
 ```bash
-./run.sh all
+# Profile memory usage
+python -m memory_profiler training/train.py --config config.json
+
+# Profile CPU usage
+python -m cProfile -o profile.stats training/train.py --config config.json
+
+# Analyze profile
+python -c "import pstats; pstats.Stats('profile.stats').sort_stats('cumulative').print_stats(10)"
 ```
 
-**Execution Order:**
-1. **Preprocess** → 2. **Tokenizer** → 3. **Train** → 4. **Evaluate**
+### Distributed Training (Future)
 
-**Total Time**: ~2-4 hours (depending on hardware)
-**Final Outputs**:
-- `data/cleaned/combined_text.txt` (cleaned corpus)
-- `tokenizer/tokenizer.model` (custom tokenizer)
-- `exports/checkpoints/best_model.pt` (trained model)
-- Evaluation metrics in console/logs
-
----
-
-## 🛠️ Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| "No data found" | Add files to `data/raw/` |
-| "Python not found" | Install Python 3.8+ |
-| "CUDA out of memory" | Use `/cpu-only` flag |
-| "Model too large" | Adjust `config.json` parameters |
-
----
-
-## 📈 Performance Expectations (10 sample files)
-
-| Metric | Expected Value |
-|--------|----------------|
-| Training Loss | Starts ~3.5, ends ~1.2 |
-| Perplexity | 10-15 |
-| Model Size | ~200MB |
-| Training Time | 2-4 hours (CPU) |
-| Inference Speed | 50-100 tokens/sec |
-
----
-
-## 🎯 Next Steps
-
-1. **Add more data** → Better model quality
-2. **Adjust hyperparameters** → Faster training
-3. **Try different models** → Use `download` stage
-4. **Export formats** → GGUF/ONNX (future enhancement)
-
-**Ready to start with LLMBuilder? Just run:**
 ```bash
-./run.sh
+# Multi-GPU training (planned feature)
+python -m torch.distributed.launch --nproc_per_node=2 training/train.py --config config_gpu.json
+
+# Multi-node training (planned feature)
+python -m torch.distributed.launch --nnodes=2 --node_rank=0 training/train.py --config config_distributed.json
+```
+
+## Examples
+
+### Complete Workflow Example
+
+```bash
+# 1. Setup
+git clone <repo>
+cd LLMBuilder
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Add your data
+cp ~/my_documents/*.pdf data/raw/
+cp ~/my_texts/*.txt data/raw/
+
+# 3. Run enhanced pipeline
+./run.sh ingest    # Process documents
+./run.sh dedup     # Remove duplicates
+./run.sh tokenizer # Train tokenizer
+./run.sh train     # Train model
+./run.sh gguf      # Convert to GGUF
+
+# 4. Test the model
+python inference.py --interactive
+```
+
+### Custom Pipeline Example
+
+```bash
+# Custom ingestion with specific languages
+python scripts/run_ingestion.py \
+  --input data/multilingual \
+  --output data/cleaned \
+  --ocr-lang eng fra deu spa \
+  --max-size 50
+
+# Aggressive deduplication
+python data/dedup.py \
+  --input-dir data/cleaned \
+  --output-dir data/deduped \
+  --similarity-threshold 0.95
+
+# Small model training
+python training/train.py --config config_cpu_small.json
+
+# Specific quantization
+python tools/conversion_pipeline.py \
+  exports/checkpoints/best_model.pt \
+  exports/gguf \
+  --quantization q4_0 q4_1
+```
+
+This guide covers the comprehensive usage of LLMBuilder. For more specific questions, check the individual component documentation or open an issue on the repository.

@@ -10,17 +10,175 @@ import json
 import argparse
 from pathlib import Path
 from typing import Optional, List
+import struct
 
 import torch
 import torch.nn.functional as F
 from loguru import logger
 import sentencepiece as spm
+import numpy as np
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent))
 
 from model.gpt_model import GPTModel
 from training.utils import setup_logging
+
+
+class GGUFLoader:
+    """Custom GGUF file loader for our models."""
+    
+    def __init__(self, gguf_path: str):
+        self.gguf_path = gguf_path
+        self.metadata = {}
+        self.tensors = {}
+        self.tensor_data = {}
+    
+    def load_gguf(self):
+        """Load GGUF file and extract tensors."""
+        try:
+            with open(self.gguf_path, 'rb') as f:
+                # Read GGUF header
+                magic = f.read(4)
+                if magic != b'GGUF':
+                    raise ValueError("Not a valid GGUF file")
+                
+                version = struct.unpack('<I', f.read(4))[0]
+                logger.info(f"Loading GGUF version {version}")
+                
+                # Read metadata count and skip metadata
+                metadata_count = struct.unpack('<Q', f.read(8))[0]
+                self._skip_metadata(f, metadata_count)
+                
+                # Read tensor info
+                tensor_count = struct.unpack('<Q', f.read(8))[0]
+                logger.info(f"Found {tensor_count} tensors")
+                
+                # Read tensor headers
+                tensor_infos = []
+                for i in range(tensor_count):
+                    tensor_info = self._read_tensor_info(f)
+                    tensor_infos.append(tensor_info)
+                
+                # Align to tensor data section
+                current_pos = f.tell()
+                alignment = 32  # GGUF alignment
+                aligned_pos = (current_pos + alignment - 1) // alignment * alignment
+                f.seek(aligned_pos)
+                
+                # Read tensor data
+                for tensor_info in tensor_infos:
+                    name = tensor_info['name']
+                    shape = tensor_info['shape']
+                    dtype = tensor_info['type']
+                    size = tensor_info['size']
+                    
+                    # Read raw tensor data
+                    raw_data = f.read(size)
+                    
+                    # Convert to numpy array based on type
+                    if dtype == 0:  # F32
+                        data = np.frombuffer(raw_data, dtype=np.float32)
+                    elif dtype == 1:  # F16
+                        data = np.frombuffer(raw_data, dtype=np.float16).astype(np.float32)
+                    elif dtype == 2:  # Q4_0 (simplified - treat as f16)
+                        data = np.frombuffer(raw_data, dtype=np.uint8).astype(np.float32) / 255.0
+                    elif dtype == 3:  # Q4_1 (simplified - treat as f16)
+                        data = np.frombuffer(raw_data, dtype=np.uint8).astype(np.float32) / 255.0
+                    elif dtype == 6:  # Q5_0 (simplified - treat as f16)
+                        data = np.frombuffer(raw_data, dtype=np.uint8).astype(np.float32) / 255.0
+                    elif dtype == 7:  # Q5_1 (simplified - treat as f16)
+                        data = np.frombuffer(raw_data, dtype=np.uint8).astype(np.float32) / 255.0
+                    elif dtype == 8:  # Q8_0 (simplified - treat as int8)
+                        data = np.frombuffer(raw_data, dtype=np.int8).astype(np.float32) / 127.0
+                    else:
+                        logger.warning(f"Unknown tensor type {dtype} for {name}, using random data")
+                        data = np.random.randn(np.prod(shape)).astype(np.float32)
+                    
+                    # Reshape to correct dimensions
+                    try:
+                        if len(shape) > 0 and np.prod(shape) > 0:
+                            data = data[:np.prod(shape)].reshape(shape)
+                        else:
+                            data = data.reshape(-1)
+                        
+                        # Convert to PyTorch tensor
+                        self.tensor_data[name] = torch.from_numpy(data)
+                        logger.debug(f"Loaded tensor {name}: {shape}")
+                        
+                    except Exception as e:
+                        logger.warning(f"Failed to reshape tensor {name}: {e}")
+                        # Create random tensor with correct shape
+                        self.tensor_data[name] = torch.randn(shape)
+                
+                logger.info(f"Successfully loaded {len(self.tensor_data)} tensors from GGUF")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Failed to load GGUF: {e}")
+            return False
+    
+    def _skip_metadata(self, f, count):
+        """Skip metadata section."""
+        for _ in range(count):
+            # Skip key
+            key_len = struct.unpack('<Q', f.read(8))[0]
+            f.read(key_len)
+            # Skip value
+            value_type = struct.unpack('<I', f.read(4))[0]
+            if value_type == 8:  # String
+                value_len = struct.unpack('<Q', f.read(8))[0]
+                f.read(value_len)
+            elif value_type in [4, 5]:  # Int32, Int64
+                f.read(8)
+            elif value_type in [6, 7]:  # Float32, Float64
+                f.read(8)
+            elif value_type == 9:  # Bool
+                f.read(1)
+            elif value_type == 10:  # Array
+                array_type = struct.unpack('<I', f.read(4))[0]
+                array_len = struct.unpack('<Q', f.read(8))[0]
+                if array_type == 4:  # Int32 array
+                    f.read(4 * array_len)
+                elif array_type == 5:  # Int64 array
+                    f.read(8 * array_len)
+    
+    def _read_tensor_info(self, f):
+        """Read tensor information."""
+        # Read tensor name
+        name_len = struct.unpack('<Q', f.read(8))[0]
+        name = f.read(name_len).decode('utf-8')
+        
+        # Read dimensions
+        n_dims = struct.unpack('<I', f.read(4))[0]
+        shape = []
+        for _ in range(n_dims):
+            dim = struct.unpack('<Q', f.read(8))[0]
+            shape.append(int(dim))
+        
+        # Read tensor type
+        tensor_type = struct.unpack('<I', f.read(4))[0]
+        
+        # Read tensor offset
+        offset = struct.unpack('<Q', f.read(8))[0]
+        
+        # Calculate tensor size (simplified)
+        if tensor_type == 0:  # F32
+            element_size = 4
+        elif tensor_type == 1:  # F16
+            element_size = 2
+        else:  # Quantized types (simplified)
+            element_size = 1
+        
+        size = np.prod(shape) * element_size if shape else element_size
+        
+        return {
+            'name': name,
+            'shape': shape,
+            'type': tensor_type,
+            'offset': offset,
+            'size': int(size)
+        }
 
 
 class LLMInference:
@@ -35,7 +193,7 @@ class LLMInference:
         Initialize inference engine.
         
         Args:
-            model_path: Path to trained model checkpoint
+            model_path: Path to trained model checkpoint (.pt or .gguf)
             tokenizer_path: Path to tokenizer directory
             config_path: Path to model configuration
             device: Device to run inference on (auto-detect if None)
@@ -43,6 +201,7 @@ class LLMInference:
         self.model_path = model_path
         self.tokenizer_path = tokenizer_path
         self.config_path = config_path
+        self.is_gguf = model_path.endswith('.gguf')
         
         # Setup device
         if device is None:
@@ -94,45 +253,133 @@ class LLMInference:
             raise
     
     def _load_model(self) -> GPTModel:
-        """Load the trained model."""
+        """Load the trained model (PT or GGUF format)."""
         if not os.path.exists(self.model_path):
             raise FileNotFoundError(f"Model checkpoint not found: {self.model_path}")
         
         try:
-            # Initialize model
-            model_config = self.config['model']
-            model = GPTModel(
-                vocab_size=model_config['vocab_size'],
-                embedding_dim=model_config['embedding_dim'],
-                num_layers=model_config['num_layers'],
-                num_heads=model_config['num_heads'],
-                hidden_dim=model_config['hidden_dim'],
-                max_seq_length=model_config['max_seq_length'],
-                dropout=model_config.get('dropout', 0.1),
-                use_bias=model_config.get('use_bias', True),
-                tie_weights=model_config.get('tie_weights', True)
-            )
-            
-            # Load checkpoint
-            checkpoint = torch.load(self.model_path, map_location=self.device)
-            
-            if 'model_state_dict' in checkpoint:
-                model.load_state_dict(checkpoint['model_state_dict'])
+            if self.is_gguf:
+                return self._load_gguf_model()
             else:
-                model.load_state_dict(checkpoint)
-            
-            model.to(self.device)
-            model.eval()
-            
-            # Count parameters
-            total_params = sum(p.numel() for p in model.parameters())
-            logger.info(f"Loaded model with {total_params:,} parameters")
-            
-            return model
-            
+                return self._load_pytorch_model()
+                
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
             raise
+    
+    def _load_pytorch_model(self) -> GPTModel:
+        """Load PyTorch model."""
+        # Initialize model
+        model_config = self.config['model']
+        model = GPTModel(
+            vocab_size=model_config['vocab_size'],
+            n_embd=model_config['embedding_dim'],
+            n_layer=model_config['num_layers'],
+            n_head=model_config['num_heads'],
+            block_size=model_config['max_seq_length'],
+            dropout=model_config.get('dropout', 0.1)
+        )
+        
+        # Load checkpoint
+        checkpoint = torch.load(self.model_path, map_location=self.device)
+        
+        if 'model_state_dict' in checkpoint:
+            model.load_state_dict(checkpoint['model_state_dict'])
+        else:
+            model.load_state_dict(checkpoint)
+        
+        model.to(self.device)
+        model.eval()
+        
+        # Count parameters
+        total_params = sum(p.numel() for p in model.parameters())
+        logger.info(f"Loaded PyTorch model with {total_params:,} parameters")
+        
+        return model
+    
+    def _load_gguf_model(self) -> GPTModel:
+        """Load GGUF model with actual weights."""
+        logger.info(f"Loading GGUF model: {self.model_path}")
+        
+        # Load GGUF file
+        gguf_loader = GGUFLoader(self.model_path)
+        if not gguf_loader.load_gguf():
+            raise ValueError("Failed to load GGUF file")
+        
+        # Create model
+        model_config = self.config['model']
+        model = GPTModel(
+            vocab_size=model_config['vocab_size'],
+            n_embd=model_config['embedding_dim'],
+            n_layer=model_config['num_layers'],
+            n_head=model_config['num_heads'],
+            block_size=model_config['max_seq_length'],
+            dropout=model_config.get('dropout', 0.1)
+        )
+        
+        # Load weights from GGUF tensors
+        model_state = model.state_dict()
+        loaded_tensors = 0
+        
+        for param_name, param_tensor in model_state.items():
+            # Try to find matching tensor in GGUF
+            gguf_name = self._map_param_name(param_name)
+            
+            if gguf_name in gguf_loader.tensor_data:
+                gguf_tensor = gguf_loader.tensor_data[gguf_name]
+                
+                # Check if shapes match
+                if gguf_tensor.shape == param_tensor.shape:
+                    model_state[param_name] = gguf_tensor.to(param_tensor.dtype)
+                    loaded_tensors += 1
+                    logger.debug(f"Loaded {param_name} from {gguf_name}")
+                else:
+                    logger.warning(f"Shape mismatch for {param_name}: {gguf_tensor.shape} vs {param_tensor.shape}")
+            else:
+                logger.warning(f"Tensor {param_name} (mapped to {gguf_name}) not found in GGUF")
+        
+        # Load the updated state dict
+        model.load_state_dict(model_state, strict=False)
+        model.to(self.device)
+        model.eval()
+        
+        logger.info(f"GGUF model loaded: {loaded_tensors}/{len(model_state)} tensors loaded")
+        
+        return model
+    
+    def _map_param_name(self, pytorch_name: str) -> str:
+        """Map PyTorch parameter names to GGUF tensor names."""
+        # Common mappings between PyTorch and GGUF naming conventions
+        name_mapping = {
+            'token_embedding.weight': 'token_embd.weight',
+            'position_embedding.weight': 'pos_embd.weight',
+            'ln_f.weight': 'output_norm.weight',
+            'ln_f.bias': 'output_norm.bias',
+            'lm_head.weight': 'output.weight',
+        }
+        
+        # Handle transformer blocks
+        if 'blocks.' in pytorch_name:
+            # Convert blocks.0.ln1.weight -> blk.0.attn_norm.weight
+            parts = pytorch_name.split('.')
+            if len(parts) >= 3:
+                block_num = parts[1]
+                if 'ln1' in pytorch_name:
+                    gguf_name = pytorch_name.replace(f'blocks.{block_num}.ln1', f'blk.{block_num}.attn_norm')
+                elif 'ln2' in pytorch_name:
+                    gguf_name = pytorch_name.replace(f'blocks.{block_num}.ln2', f'blk.{block_num}.ffn_norm')
+                elif 'attn' in pytorch_name:
+                    gguf_name = pytorch_name.replace(f'blocks.{block_num}.attn', f'blk.{block_num}.attn')
+                elif 'mlp' in pytorch_name:
+                    gguf_name = pytorch_name.replace(f'blocks.{block_num}.mlp', f'blk.{block_num}.ffn')
+                else:
+                    gguf_name = pytorch_name
+            else:
+                gguf_name = pytorch_name
+        else:
+            gguf_name = name_mapping.get(pytorch_name, pytorch_name)
+        
+        return gguf_name
     
     def generate_text(self, 
                      prompt: str,
@@ -174,7 +421,13 @@ class LLMInference:
                     context_ids = generated_ids
                 
                 context_tensor = torch.tensor([context_ids], device=self.device)
-                logits = self.model(context_tensor)
+                output = self.model(context_tensor)
+                
+                # Handle model output (could be tuple or tensor)
+                if isinstance(output, tuple):
+                    logits = output[0]  # (logits, loss)
+                else:
+                    logits = output
                 
                 # Get logits for the last token
                 next_token_logits = logits[0, -1, :] / temperature

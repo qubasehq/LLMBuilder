@@ -37,7 +37,26 @@
     "eos_id": 1,
     "unk_id": 0,
     "bos_id": 2,
-    "pad_id": 3
+    "pad_id": 3,
+    "training": {
+      "trainer_type": "huggingface",
+      "preset": "default",
+      "custom_config": {},
+      "validation": {
+        "enabled": true,
+        "sample_texts": [
+          "This is a test sentence for tokenizer validation.",
+          "Another example with numbers: 123 and symbols: @#$%"
+        ]
+      },
+      "sentencepiece": {
+        "enabled": false,
+        "model_prefix": "tokenizer",
+        "user_defined_symbols": [],
+        "control_symbols": [],
+        "byte_fallback": true
+      }
+    }
   },
   "preprocessing": {
     "max_samples": 1000,
@@ -48,7 +67,70 @@
     "remove_empty_lines": true,
     "encoding": "utf-8",
     "chunk_size": 1000000,
-    "supported_formats": ["txt", "pdf", "docx", "pptx","md"]
+    "supported_formats": ["txt", "pdf", "docx", "pptx", "md", "html", "epub"]
+  },
+  "ingestion": {
+    "max_file_size_mb": 100,
+    "batch_size": 10,
+    "parallel_workers": 4,
+    "skip_existing": true,
+    "validate_output": true,
+    "progress_reporting": true,
+    "extractors": {
+      "html": {
+        "enabled": true,
+        "remove_scripts": true,
+        "remove_styles": true,
+        "remove_navigation": true,
+        "preserve_links": false,
+        "min_text_length": 50
+      },
+      "epub": {
+        "enabled": true,
+        "extract_metadata": true,
+        "preserve_chapters": true,
+        "skip_images": true,
+        "min_chapter_length": 100
+      },
+      "pdf": {
+        "enabled": true,
+        "use_ocr_fallback": true,
+        "ocr_confidence_threshold": 60,
+        "ocr_language": "eng",
+        "extract_images": false,
+        "preserve_layout": false
+      },
+      "markdown": {
+        "enabled": true,
+        "preserve_formatting": false,
+        "extract_code_blocks": true,
+        "preserve_tables": true,
+        "remove_html_tags": true
+      }
+    }
+  },
+  "deduplication": {
+    "enabled": true,
+    "hash_deduplication": {
+      "enabled": true,
+      "normalize_whitespace": true,
+      "normalize_case": true,
+      "normalize_punctuation": true,
+      "min_line_length": 10
+    },
+    "embedding_deduplication": {
+      "enabled": true,
+      "model_name": "all-MiniLM-L6-v2",
+      "similarity_threshold": 0.85,
+      "batch_size": 32,
+      "max_documents": 10000,
+      "cache_embeddings": true
+    },
+    "statistics": {
+      "save_report": true,
+      "detailed_logging": true,
+      "progress_reporting": true
+    }
   },
   "evaluation": {
     "batch_size": 4,
@@ -73,19 +155,57 @@
     "data_dir": "data",
     "raw_data_dir": "data/raw",
     "cleaned_data_dir": "data/cleaned",
+    "deduped_data_dir": "data/deduped",
     "tokenized_data_dir": "data/tokens",
+    "finetune_data_dir": "data/finetune",
     "tokenizer_dir": "exports/tokenizer",
     "checkpoint_dir": "exports/checkpoints",
+    "gguf_dir": "exports/gguf",
     "log_dir": "logs",
-    "export_dir": "exports"
+    "export_dir": "exports",
+    "validation_dir": "validation_results",
+    "monitoring_dir": "monitoring"
+  },
+  "export": {
+    "gguf": {
+      "enabled": true,
+      "quantization_levels": ["f16", "q8_0", "q4_0"],
+      "validate_output": true,
+      "compression": true,
+      "metadata": {
+        "include_training_stats": true,
+        "include_model_info": true,
+        "custom_fields": {}
+      }
+    },
+    "pytorch": {
+      "enabled": true,
+      "save_optimizer_state": false,
+      "save_scheduler_state": false,
+      "compress": true
+    },
+    "onnx": {
+      "enabled": false,
+      "opset_version": 14,
+      "optimize": true,
+      "dynamic_axes": true
+    },
+    "model_cards": {
+      "enabled": true,
+      "template": "templates/model_card_template.md",
+      "auto_generate": true,
+      "include_metrics": true
+    }
   },
   "device": {
-    "use_cuda": false,
+    "use_cuda": true,
     "cuda_device": 0,
     "use_mps": false,
-    "cpu_threads": 0,
+    "cpu_threads": 8,
     "enable_mkldnn": true,
-    "mixed_precision": false
+    "mixed_precision": true,
+    "fallback_to_cpu": true,
+    "auto_detect_device": true
   },
   "optimization": {
     "optimizer": "adamw",

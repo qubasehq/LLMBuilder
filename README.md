@@ -2,7 +2,7 @@
 
 Created By Qubase
 
-A production-ready implementation for training and fine-tuning Large Language Models from scratch. This project provides a complete pipeline for data preprocessing, tokenizer training, model training, and evaluation, with optimizations for both CPU and GPU environments.
+A comprehensive, production-ready implementation for training and fine-tuning Large Language Models from scratch. This project provides an advanced pipeline with enhanced document ingestion, intelligent deduplication, model training, automated GGUF conversion, and comprehensive testing - all optimized for both CPU and GPU environments.
 
 ## Table of Contents
 
@@ -31,23 +31,42 @@ A production-ready implementation for training and fine-tuning Large Language Mo
 
 ## Key Features <a name="key-features"></a>
 
-- **End-to-End Training Pipeline**: Complete workflow from raw data to trained model
-- **CPU Optimization**: Efficient multi-threaded training on CPU
-- **Robust Error Handling**: Comprehensive error handling and logging
-- **Modular Architecture**: Clean, maintainable code structure
-- **Multiple Data Formats**: Support for PDF, DOCX, and TXT files
-- **Advanced Tokenization**: SentencePiece-based tokenizer with BPE
-- **GPT Architecture**: Modern transformer implementation
-- **Model Evaluation**: Includes perplexity and text generation metrics
-- **Checkpointing**: Automatic save/restore of training progress
-- **Detailed Logging**: Comprehensive training logs and metrics
+### 🚀 **Enhanced Data Processing**
+- **Multi-Format Document Ingestion**: HTML, EPUB, PDF (with OCR), Markdown, DOCX, TXT
+- **Intelligent Deduplication**: Hash-based exact + embedding-based semantic duplicate removal
+- **OCR Support**: Automatic fallback for scanned PDFs using Tesseract
+- **Advanced Text Cleaning**: BeautifulSoup HTML processing, metadata extraction
+
+### 🧠 **Advanced Training Pipeline**
+- **End-to-End Workflow**: From raw documents to production-ready models
+- **Multiple Tokenizer Options**: HuggingFace Tokenizers + SentencePiece CLI integration
+- **CPU/GPU Optimization**: Efficient multi-threaded training with mixed precision
+- **Modern GPT Architecture**: Transformer implementation with latest optimizations
+
+### 📦 **Production-Ready Export**
+- **Automated GGUF Conversion**: Multiple quantization levels (f16, q8_0, q4_0)
+- **Quality Validation**: Comprehensive model validation and quality scoring
+- **Batch Processing**: Parallel conversion with error recovery
+- **llama.cpp Compatibility**: Direct integration with inference engines
+
+### 🔧 **Developer Experience**
+- **Comprehensive Testing**: Automated test suite with pytest integration
+- **Robust Error Handling**: Detailed logging and recovery mechanisms
+- **Modular Architecture**: Clean, maintainable, extensible codebase
+- **Cross-Platform**: Windows PowerShell + Linux/macOS Bash scripts
 
 ## System Requirements
 
-- Python 3.8 or higher
-- 4GB RAM minimum (8GB+ recommended)
-- 2GB+ free disk space
-- Windows, Linux, or macOS
+### Minimum Requirements
+- **Python**: 3.8 or higher
+- **RAM**: 4GB minimum (8GB+ recommended for large datasets)
+- **Storage**: 5GB+ free disk space
+- **OS**: Windows 10+, Linux, or macOS
+
+### Additional Dependencies
+- **Tesseract OCR**: For PDF OCR processing (see [INSTALL_TESSERACT.md](INSTALL_TESSERACT.md))
+- **Git**: For repository management
+- **Optional**: CUDA-compatible GPU for accelerated training
 
 ## Installation <a name="installation"></a>
 
@@ -71,6 +90,23 @@ A production-ready implementation for training and fine-tuning Large Language Mo
 3. Install dependencies:
    ```bash
    pip install -r requirements.txt
+   ```
+
+4. Install Tesseract OCR (for PDF processing):
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install tesseract-ocr
+   
+   # macOS
+   brew install tesseract
+   
+   # Windows - see INSTALL_TESSERACT.md for detailed instructions
+   ```
+
+5. Verify installation:
+   ```bash
+   python -c "import torch; print('PyTorch:', torch.__version__)"
+   tesseract --version
    ```
 
 ## System Preparation
@@ -106,23 +142,29 @@ htop
 
 ## Getting Started
 
-For detailed instructions, see the [Complete Usage Guide](USAGE.md) which includes:
-- Step-by-step walkthroughs
-- Example terminal outputs
-- Common issues and solutions
-- Platform-specific commands
-- Troubleshooting guide
+For detailed instructions, see the [**📖 Complete Usage Guide (USAGE.md)**](USAGE.md) which includes:
+- **Step-by-step walkthroughs** with example outputs
+- **Advanced configuration options** for all components
+- **Troubleshooting guide** with common solutions
+- **Performance optimization** tips
+- **Platform-specific commands** for Windows/Linux/macOS
+- **Integration examples** with other tools
 
 ## Project Structure <a name="project-structure"></a>
 
 ```
 LLMBuilder/
 ├── data/                   # Data directories
-│   ├── raw/               # Raw input files (.txt, .pdf, .docx)
+│   ├── raw/               # Raw input files (all formats)
 │   ├── cleaned/           # Processed text files
-│   └── tokens/            # Tokenized datasets
+│   ├── deduped/           # Deduplicated content
+│   ├── tokens/            # Tokenized datasets
+│   ├── finetune/          # Fine-tuning datasets
+│   ├── ingest.py          # Enhanced document ingester
+│   ├── dedup.py           # Deduplication system
 │   ├── download_data.py   # Script to download datasets
-│   └── SOURCES.md         # Data sources documentation
+│   ├── SOURCES.md         # Data sources documentation
+│   └── README_INGESTION.md # Ingestion documentation
 │
 ├── debug_scripts/         # Debugging utilities
 │   ├── debug_loader.py    # Data loading debugger
@@ -147,18 +189,33 @@ LLMBuilder/
 ├── model/                # Model architecture
 │   └── gpt_model.py     # GPT model implementation
 │
+├── scripts/              # Enhanced processing scripts
+│   ├── run_ingestion.py  # Document ingestion CLI
+│   ├── enhanced_preprocess.py # Advanced preprocessing
+│   ├── train_sentencepiece.py # SentencePiece training
+│   └── test_deduplication.py # Deduplication testing
+│
+├── tests/                # Comprehensive test suite
+│   ├── test_ingestion.py # Document ingestion tests
+│   ├── test_deduplication.py # Deduplication tests
+│   ├── test_conversion_pipeline.py # GGUF conversion tests
+│   ├── test_tokenizer_trainer.py # Tokenizer tests
+│   └── ... (many more test files)
+│
 ├── tools/                # Utility scripts
 │   ├── analyze_data.ps1  # PowerShell data analysis
 │   ├── analyze_data.sh   # Bash data analysis
 │   ├── download_hf_model.py # HuggingFace model downloader
-│   └── export_gguf.py    # GGUF export utility
+│   ├── export_gguf.py    # Enhanced GGUF export utility
+│   ├── conversion_pipeline.py # Automated GGUF conversion
+│   └── quantization_manager.py # Advanced quantization
 │
 ├── training/             # Training pipeline
 │   ├── dataset.py       # Dataset handling
 │   ├── preprocess.py    # Data preprocessing
 │   ├── quantization.py  # Model quantization
 │   ├── train.py         # Main training script
-│   ├── train_tokenizer.py # Tokenizer training
+│   ├── train_tokenizer.py # Enhanced tokenizer training
 │   └── utils.py         # Training utilities
 │
 ├── .gitignore           # Git ignore rules
@@ -168,14 +225,25 @@ LLMBuilder/
 ├── inference.py         # Inference script
 ├── quantize_model.py    # Model quantization
 ├── README.md           # This file
+├── PIPELINE_UPDATES.md  # Recent updates summary
+├── INSTALL_TESSERACT.md # OCR installation guide
 ├── requirements.txt    # Python dependencies
-├── run.ps1            # PowerShell runner
-└── run.sh             # Bash runner
+├── run.ps1            # Enhanced PowerShell runner
+└── run.sh             # Enhanced Bash runner
 ```
 
 ## Quick Start <a name="quick-start"></a>
 
 ### 1. Prepare Your Data <a name="1-prepare-your-data"></a>
+
+#### Enhanced Document Support
+Place your documents in `data/raw/`. The system now supports:
+- **Text files** (.txt, .md)
+- **PDF files** (.pdf) - with automatic OCR for scanned documents
+- **Word documents** (.docx)
+- **Web content** (.html)
+- **E-books** (.epub)
+- **Markdown** (.md)
 
 #### Option 1: Download Sample Data
 ```bash
@@ -190,10 +258,11 @@ python data/download_data.py --topic technology --count 3
 Available topics: literature, science, technology, business, health, education
 
 #### Option 2: Use Your Own Data
-Place your documents in `data/raw/`:
-- Text files (.txt)
-- PDF files (.pdf)
-- Word documents (.docx)
+Simply place your documents in `data/raw/` - the enhanced ingestion pipeline will automatically:
+- Detect file formats
+- Extract text with appropriate methods
+- Handle OCR for scanned PDFs
+- Clean and normalize content
 
 ### 2. Run the Pipeline <a name="2-run-the-pipeline"></a>
 
@@ -215,10 +284,16 @@ Or using PowerShell:
 
 ### 3. Run Specific Stages <a name="3-run-specific-stages"></a>
 
-Run individual pipeline stages as needed:
+The enhanced pipeline includes new stages for better data processing:
 
 ```bash
-# Preprocess data
+# NEW: Enhanced document ingestion
+./run.sh ingest
+
+# NEW: Intelligent deduplication  
+./run.sh dedup
+
+# Traditional preprocessing (optional)
 ./run.sh preprocess
 
 # Train tokenizer
@@ -235,9 +310,107 @@ Run individual pipeline stages as needed:
 
 # Interactive text generation
 ./run.sh inference
+
+# NEW: Convert to GGUF format
+./run.sh gguf
+
+# NEW: Run comprehensive tests
+./run.sh test
 ```
 
-On Windows, use `run.bat` or `run.ps1` with the same stage names.
+#### Windows PowerShell Examples:
+```powershell
+# Enhanced document processing
+.\run.ps1 -Stage ingest
+
+# Run deduplication
+.\run.ps1 -Stage dedup
+
+# Complete pipeline
+.\run.ps1 -Stage all
+
+# Convert to GGUF
+.\run.ps1 -Stage gguf
+```
+
+## Enhanced Pipeline Stages
+
+### 🔄 **Document Ingestion** (`ingest`)
+Advanced document processing with multi-format support:
+
+```bash
+# Process all supported formats with OCR
+./run.sh ingest
+
+# With custom options
+python scripts/run_ingestion.py \
+  --input data/raw \
+  --output data/cleaned \
+  --ocr-lang eng fra deu \
+  --max-size 50 \
+  --recursive
+```
+
+**Features:**
+- **HTML Processing**: BeautifulSoup-based cleaning, removes scripts/styles
+- **EPUB Support**: Full e-book text extraction with metadata
+- **PDF with OCR**: Automatic fallback to Tesseract for scanned documents
+- **Markdown Processing**: Advanced parsing with table/code block support
+- **Progress Tracking**: Real-time processing statistics
+
+### 🔍 **Intelligent Deduplication** (`dedup`)
+Remove exact and near-duplicate content to improve training quality:
+
+```bash
+# Run both hash and embedding deduplication
+./run.sh dedup
+
+# Custom similarity threshold
+python data/dedup.py \
+  --input-dir data/cleaned \
+  --output-dir data/deduped \
+  --similarity-threshold 0.85
+```
+
+**Methods:**
+- **Hash-based**: Exact duplicate detection with text normalization
+- **Embedding-based**: Semantic similarity using sentence-transformers
+- **Quality Preservation**: Keeps highest quality version of duplicates
+- **Statistics**: Detailed reporting of removed content
+
+### 📦 **GGUF Conversion** (`gguf`)
+Automated conversion to GGUF format for production deployment:
+
+```bash
+# Convert with multiple quantization levels
+./run.sh gguf
+
+# Custom quantization options
+python tools/conversion_pipeline.py \
+  exports/checkpoints/best_model.pt \
+  exports/gguf \
+  --quantization f16 q8_0 q4_0 q4_1 \
+  --tokenizer exports/tokenizer
+```
+
+**Features:**
+- **Multiple Quantization**: f16, q8_0, q4_0, q4_1, q5_0, q5_1
+- **Quality Validation**: Automatic validation and quality scoring
+- **Batch Processing**: Parallel conversion with error recovery
+- **Metadata Preservation**: Complete model metadata in GGUF format
+
+### 🧪 **Comprehensive Testing** (`test`)
+Automated test suite for quality assurance:
+
+```bash
+# Run all tests
+./run.sh test
+
+# Run specific test categories
+python -m pytest tests/test_ingestion.py -v
+python -m pytest tests/test_deduplication.py -v
+python -m pytest tests/test_conversion_pipeline.py -v
+```
 
 ## Fine-tuning <a name="fine-tuning"></a>
 
@@ -571,14 +744,21 @@ GPT-style transformer with:
 - Context: 512 tokens
 - Vocabulary: 16K BPE
 
-## Future Enhancements <a name="future-enhancements"></a>
+## Recent Updates <a name="recent-updates"></a>
 
-Planned features:
-- GPU acceleration
-- Distributed training
-- Web monitoring interface
-- More model architectures
-- Additional optimizations
+### ✨ **Latest Features** (See [PIPELINE_UPDATES.md](PIPELINE_UPDATES.md))
+- **Enhanced Document Ingestion**: Multi-format support with OCR
+- **Intelligent Deduplication**: Hash + embedding-based duplicate removal
+- **Automated GGUF Conversion**: Production-ready model export
+- **Comprehensive Testing**: Full test suite with pytest
+- **Cross-platform Scripts**: Enhanced PowerShell and Bash runners
+
+### 🚀 **Future Enhancements**
+- **Distributed Training**: Multi-GPU and multi-node support
+- **Web Interface**: Real-time monitoring dashboard
+- **More Architectures**: LLaMA, BERT, and custom models
+- **Cloud Integration**: AWS/GCP/Azure deployment
+- **Advanced Optimizations**: Dynamic quantization, pruning
 
 ## Pre-trained Models <a name="pre-trained-models"></a>
 
@@ -598,11 +778,41 @@ MIT Licensed. See [LICENSE](LICENSE) for details.
 
 Contributions welcome! Please submit PRs or open issues.
 
+## Quick Reference
+
+### 🚀 **One-Command Setup**
+```bash
+# Complete pipeline with enhanced features
+./run.sh all          # Linux/macOS
+.\run.ps1 -Stage all  # Windows PowerShell
+```
+
+### 📋 **Essential Commands**
+```bash
+# Enhanced document processing
+./run.sh ingest       # Process HTML, PDF, EPUB, etc.
+./run.sh dedup        # Remove duplicates intelligently
+./run.sh train        # Train your model
+./run.sh gguf         # Convert to GGUF format
+./run.sh test         # Run comprehensive tests
+```
+
+### 📚 **Documentation**
+- **[USAGE.md](USAGE.md)** - Complete usage guide with examples
+- **[PIPELINE_UPDATES.md](PIPELINE_UPDATES.md)** - Recent feature updates
+- **[INSTALL_TESSERACT.md](INSTALL_TESSERACT.md)** - OCR setup guide
+- **[data/README_INGESTION.md](data/README_INGESTION.md)** - Document ingestion details
+
+### 🆘 **Need Help?**
+1. Check the [Usage Guide](USAGE.md) for detailed examples
+2. Review logs in `logs/` directory
+3. Run tests: `./run.sh test`
+4. Open an issue on the repository
+
 ---
 
-**Get started** by adding your data to `data/raw/` and running:
+**Get started** by adding your documents to `data/raw/` and running:
 
 ```bash
-./run.sh  # Linux/macOS
-run.bat   # Windows
+./run.sh all  # Complete enhanced pipeline
 ``` 

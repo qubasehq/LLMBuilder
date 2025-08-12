@@ -40,6 +40,8 @@ except ImportError:
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 from training.utils import setup_logging
+from data.ingest import DocumentIngester
+from data.dedup import DeduplicationPipeline
 
 
 class TextProcessor:
@@ -343,11 +345,15 @@ class TextProcessor:
 
 
 class DataPreprocessor:
-    """Main data preprocessing pipeline."""
+    """Main data preprocessing pipeline with integrated ingestion and deduplication."""
     
     def __init__(self, 
                  raw_data_dir: str = "data/raw",
                  cleaned_data_dir: str = "data/cleaned",
+                 deduped_data_dir: str = "data/deduped",
+                 use_enhanced_ingestion: bool = True,
+                 use_deduplication: bool = True,
+                 config: Optional[Dict[str, Any]] = None,
                  **processor_kwargs):
         """
         Initialize data preprocessor.
@@ -355,18 +361,69 @@ class DataPreprocessor:
         Args:
             raw_data_dir: Directory containing raw data files
             cleaned_data_dir: Directory to save cleaned data
+            deduped_data_dir: Directory to save deduplicated data
+            use_enhanced_ingestion: Whether to use enhanced ingestion pipeline
+            use_deduplication: Whether to use deduplication pipeline
+            config: Configuration dictionary
             **processor_kwargs: Arguments for TextProcessor
         """
         self.raw_data_dir = Path(raw_data_dir)
         self.cleaned_data_dir = Path(cleaned_data_dir)
+        self.deduped_data_dir = Path(deduped_data_dir)
+        self.use_enhanced_ingestion = use_enhanced_ingestion
+        self.use_deduplication = use_deduplication
+        self.config = config or {}
+        
+        # Initialize components
         self.processor = TextProcessor(**processor_kwargs)
         
-        # Create output directory
+        # Initialize enhanced ingestion if enabled
+        if self.use_enhanced_ingestion:
+            try:
+                ingestion_config = self.config.get('ingestion', {})
+                self.ingester = DocumentIngester(
+                    output_dir=str(self.cleaned_data_dir),
+                    max_file_size_mb=ingestion_config.get('max_file_size_mb', 100)
+                )
+                logger.info("Enhanced ingestion pipeline initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize enhanced ingestion: {e}")
+                self.use_enhanced_ingestion = False
+                self.ingester = None
+        else:
+            self.ingester = None
+        
+        # Initialize deduplication if enabled
+        if self.use_deduplication:
+            try:
+                dedup_config = self.config.get('deduplication', {})
+                embedding_config = dedup_config.get('embedding_deduplication', {})
+                self.deduplicator = DeduplicationPipeline(
+                    use_hash_dedup=dedup_config.get('hash_deduplication', {}).get('enabled', True),
+                    use_embedding_dedup=embedding_config.get('enabled', True),
+                    embedding_model=embedding_config.get('model_name', 'all-MiniLM-L6-v2'),
+                    similarity_threshold=embedding_config.get('similarity_threshold', 0.85)
+                )
+                logger.info("Deduplication pipeline initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize deduplication: {e}")
+                self.use_deduplication = False
+                self.deduplicator = None
+        else:
+            self.deduplicator = None
+        
+        # Create output directories
         self.cleaned_data_dir.mkdir(parents=True, exist_ok=True)
+        if self.use_deduplication:
+            self.deduped_data_dir.mkdir(parents=True, exist_ok=True)
         
         logger.info(f"Data preprocessor initialized")
         logger.info(f"Raw data dir: {self.raw_data_dir}")
         logger.info(f"Cleaned data dir: {self.cleaned_data_dir}")
+        if self.use_deduplication:
+            logger.info(f"Deduped data dir: {self.deduped_data_dir}")
+        logger.info(f"Enhanced ingestion: {self.use_enhanced_ingestion}")
+        logger.info(f"Deduplication: {self.use_deduplication}")
     
     def find_files(self) -> List[Path]:
         """Find all supported files in raw data directory."""
@@ -430,70 +487,92 @@ class DataPreprocessor:
         return unprocessed
     
     def process_all(self) -> Dict[str, Any]:
-        """Process all files in the raw data directory."""
+        """Process all files in the raw data directory with integrated pipeline."""
         from tqdm import tqdm
         import traceback
         
-        logger.info("Starting data preprocessing...")
+        logger.info("Starting integrated data preprocessing pipeline...")
         logger.info(f"Looking for files in: {self.raw_data_dir.absolute()}")
         
         try:
-            all_files = self.find_files()
-            logger.info(f"Found {len(all_files)} total files")
+            # Step 1: Enhanced Ingestion (if enabled)
+            if self.use_enhanced_ingestion and self.ingester:
+                logger.info("=== Step 1: Enhanced Document Ingestion ===")
+                try:
+                    ingestion_results = self.ingester.ingest_directory(
+                        self.raw_data_dir, 
+                        recursive=True
+                    )
+                    logger.info(f"Ingestion complete: {ingestion_results['processed_count']} files processed")
+                    
+                    # Use ingested files for further processing
+                    processed_files = list(self.cleaned_data_dir.glob("*.txt"))
+                    
+                except Exception as e:
+                    logger.error(f"Enhanced ingestion failed: {e}")
+                    logger.info("Falling back to legacy processing")
+                    self.use_enhanced_ingestion = False
+                    processed_files = []
+            else:
+                processed_files = []
             
-            # Filter out already processed files
-            files = self.get_unprocessed_files(all_files)
-            already_processed = len(all_files) - len(files)
-            
-            if already_processed > 0:
-                logger.info(f"Skipping {already_processed} already processed files")
-            
-            if not files:
-                logger.info("All files are already processed and up to date - skipping processing")
-                # Count existing output files
-                existing_files = list(self.cleaned_data_dir.glob("*_cleaned.txt"))
-                total_chars = 0
-                for existing_file in existing_files:
-                    try:
-                        with open(existing_file, 'r', encoding='utf-8') as f:
-                            total_chars += len(f.read())
-                    except:
-                        pass
+            # Step 2: Legacy Processing (if enhanced ingestion disabled or failed)
+            if not self.use_enhanced_ingestion or not processed_files:
+                logger.info("=== Step 2: Legacy Document Processing ===")
+                all_files = self.find_files()
+                logger.info(f"Found {len(all_files)} total files")
                 
-                # Ensure combined file exists
-                combined_path = self.cleaned_data_dir / "combined_text.txt"
-                if not combined_path.exists() and existing_files:
-                    logger.info("Creating combined file from existing cleaned files")
-                    try:
-                        with open(combined_path, 'w', encoding='utf-8') as combined_file:
-                            for cleaned_file in sorted(existing_files):
-                                try:
-                                    with open(cleaned_file, 'r', encoding='utf-8') as f:
-                                        content = f.read().strip()
-                                        if content:
-                                            combined_file.write(content)
-                                            combined_file.write("\n\n")
-                                except Exception as e:
-                                    logger.warning(f"Failed to read {cleaned_file}: {e}")
-                                    continue
-                        logger.info(f"Combined file created: {combined_path}")
-                    except Exception as e:
-                        logger.error(f"Failed to create combined file: {e}")
+                # Filter out already processed files
+                files = self.get_unprocessed_files(all_files)
+                already_processed = len(all_files) - len(files)
                 
-                # Include combined file in output list
-                all_output_files = [str(f.absolute()) for f in existing_files]
-                if combined_path.exists():
-                    all_output_files.append(str(combined_path.absolute()))
+                if already_processed > 0:
+                    logger.info(f"Skipping {already_processed} already processed files")
                 
-                logger.info(f"Preprocessing complete: {len(existing_files)} files already processed, {total_chars:,} total characters")
-                return {
-                    'processed': len(existing_files),
-                    'failed': 0,
-                    'total_chars': total_chars,
-                    'output_files': all_output_files
-                }
+                if not files and already_processed == 0:
+                    logger.warning("No files found to process")
+                    return {
+                        'processed': 0,
+                        'failed': 0,
+                        'total_chars': 0,
+                        'output_files': []
+                    }
+                
+                if files:
+                    logger.info(f"Processing {len(files)} new/modified files")
+                    processed_files = self._process_files_legacy(files)
+                else:
+                    processed_files = list(self.cleaned_data_dir.glob("*_cleaned.txt"))
             
-            logger.info(f"Processing {len(files)} new/modified files")
+            # Step 3: Deduplication (if enabled)
+            final_files = processed_files
+            if self.use_deduplication and self.deduplicator and processed_files:
+                logger.info("=== Step 3: Deduplication ===")
+                try:
+                    # Convert Path objects to strings for deduplication
+                    file_paths = [str(f) for f in processed_files if f.suffix == '.txt']
+                    
+                    if file_paths:
+                        dedup_stats = self.deduplicator.process_files(
+                            file_paths, 
+                            str(self.deduped_data_dir)
+                        )
+                        logger.info(f"Deduplication complete: {dedup_stats.final_document_count} files remaining")
+                        logger.info(f"Removed {dedup_stats.exact_duplicates_removed} exact duplicates")
+                        logger.info(f"Removed {dedup_stats.near_duplicates_removed} near duplicates")
+                        
+                        # Use deduplicated files as final output
+                        final_files = list(self.deduped_data_dir.glob("*.txt"))
+                    else:
+                        logger.warning("No text files found for deduplication")
+                        
+                except Exception as e:
+                    logger.error(f"Deduplication failed: {e}")
+                    logger.info("Using non-deduplicated files")
+            
+            # Step 4: Create combined file and calculate statistics
+            logger.info("=== Step 4: Finalizing Output ===")
+            return self._finalize_output(final_files)
         
             processed_count = 0
             failed_count = 0
@@ -618,37 +697,220 @@ class DataPreprocessor:
             logger.error(f"Fatal error in preprocessing: {e}")
             logger.error(traceback.format_exc())
             raise
+    
+    def _process_files_legacy(self, files: List[Path]) -> List[Path]:
+        """Process files using legacy method."""
+        from tqdm import tqdm
+        import traceback
+        
+        processed_files = []
+        failed_count = 0
+        
+        # Initialize tqdm progress bar
+        progress_bar = tqdm(
+            files, 
+            desc="Processing files", 
+            unit="file",
+            bar_format='{l_bar}{bar:50}{r_bar}{bar:-10b}',
+            colour='green'
+        )
+        
+        for file_path in progress_bar:
+            try:
+                # Process file
+                progress_bar.set_postfix(file=file_path.name[:20] + '...' if len(file_path.name) > 20 else file_path.name)
+                logger.debug(f"Processing file: {file_path}")
+                
+                cleaned_text = self.processor.process_file(file_path)
+                
+                if cleaned_text:
+                    # Ensure output directory exists
+                    self.cleaned_data_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    # Save cleaned text to file
+                    output_file = self.cleaned_data_dir / f"{file_path.stem}_cleaned.txt"
+                    try:
+                        with open(output_file, 'w', encoding='utf-8') as f:
+                            f.write(cleaned_text)
+                        
+                        processed_files.append(output_file)
+                        progress_bar.write(f"[DONE] Processed: {file_path.name} -> {len(cleaned_text):,} chars")
+                    except Exception as write_error:
+                        failed_count += 1
+                        progress_bar.write(f"[FAIL] Failed to write {file_path.name}: {str(write_error)}")
+                        logger.error(f"Error writing {output_file}: {traceback.format_exc()}")
+                else:
+                    failed_count += 1
+                    progress_bar.write(f"[SKIP] No content extracted from: {file_path.name}")
+            
+            except Exception as e:
+                failed_count += 1
+                error_msg = f"✗ Error processing {file_path.name}: {str(e)}"
+                # Remove any non-ASCII characters from error message
+                safe_error_msg = error_msg.encode('ascii', 'replace').decode('ascii')
+                progress_bar.write(safe_error_msg)
+                logger.error(f"Error processing {file_path}: {traceback.format_exc()}")
+        
+        logger.info(f"Legacy processing complete: {len(processed_files)} processed, {failed_count} failed")
+        return processed_files
+    
+    def _finalize_output(self, final_files: List[Path]) -> Dict[str, Any]:
+        """Finalize output and create combined file."""
+        import traceback
+        
+        # Determine the final output directory
+        if self.use_deduplication and final_files and any(self.deduped_data_dir.name in str(f) for f in final_files):
+            output_dir = self.deduped_data_dir
+            combined_name = "combined_deduped.txt"
+        else:
+            output_dir = self.cleaned_data_dir
+            combined_name = "combined_text.txt"
+        
+        # Create combined file
+        combined_path = output_dir / combined_name
+        total_chars = 0
+        
+        if final_files:
+            try:
+                logger.info(f"Creating combined file from {len(final_files)} files")
+                with open(combined_path, 'w', encoding='utf-8') as combined_file:
+                    for file_path in sorted(final_files):
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                content = f.read().strip()
+                                if content:  # Only write non-empty content
+                                    combined_file.write(content)
+                                    combined_file.write("\n\n")  # Separator between documents
+                                    total_chars += len(content)
+                        except Exception as e:
+                            logger.warning(f"Failed to read {file_path} for combining: {e}")
+                            continue
+                
+                # Verify the combined file has content
+                if combined_path.exists() and combined_path.stat().st_size > 0:
+                    logger.info(f"Combined file ready: {combined_path} ({combined_path.stat().st_size:,} bytes)")
+                else:
+                    logger.warning("Combined file is empty")
+                    
+            except Exception as e:
+                logger.error(f"Failed to create combined file: {e}")
+                logger.error(traceback.format_exc())
+        
+        # Prepare output file list
+        output_files = [str(f.absolute()) for f in final_files]
+        if combined_path.exists():
+            output_files.append(str(combined_path.absolute()))
+        
+        # Calculate total characters if not already done
+        if total_chars == 0:
+            for file_path in final_files:
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        total_chars += len(f.read())
+                except:
+                    pass
+        
+        results = {
+            'processed': len(final_files),
+            'failed': 0,  # Failed count handled in individual steps
+            'total_chars': total_chars,
+            'output_files': output_files,
+            'pipeline_used': {
+                'enhanced_ingestion': self.use_enhanced_ingestion,
+                'deduplication': self.use_deduplication,
+                'final_output_dir': str(output_dir)
+            }
+        }
+        
+        logger.info(f"Pipeline complete: {len(final_files)} files, {total_chars:,} total characters")
+        logger.info(f"Final output directory: {output_dir}")
+        
+        return results
+
+
+def load_config(config_path: str = "config.json") -> Dict[str, Any]:
+    """Load configuration from file."""
+    import json
+    
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        logger.info(f"Configuration loaded from {config_path}")
+        return config
+    except FileNotFoundError:
+        logger.warning(f"Configuration file {config_path} not found, using defaults")
+        return {}
+    except Exception as e:
+        logger.error(f"Error loading configuration: {e}")
+        return {}
 
 
 def main():
-    """Main entry point."""
+    """Main entry point with integrated pipeline support."""
+    import argparse
+    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="LLMBuilder Data Preprocessing Pipeline")
+    parser.add_argument('--config', type=str, default='config.json', help='Configuration file path')
+    parser.add_argument('--no-ingestion', action='store_true', help='Disable enhanced ingestion')
+    parser.add_argument('--no-dedup', action='store_true', help='Disable deduplication')
+    parser.add_argument('--raw-dir', type=str, help='Raw data directory')
+    parser.add_argument('--cleaned-dir', type=str, help='Cleaned data directory')
+    parser.add_argument('--deduped-dir', type=str, help='Deduplicated data directory')
+    
+    args = parser.parse_args()
+    
     # Setup logging
     setup_logging(log_dir="logs", level="INFO")
     
     try:
-        # Initialize preprocessor
+        # Load configuration
+        config = load_config(args.config)
+        
+        # Get directories from config or args
+        paths = config.get('paths', {})
+        raw_dir = args.raw_dir or paths.get('raw_data_dir', 'data/raw')
+        cleaned_dir = args.cleaned_dir or paths.get('cleaned_data_dir', 'data/cleaned')
+        deduped_dir = args.deduped_dir or paths.get('deduped_data_dir', 'data/deduped')
+        
+        # Get preprocessing settings
+        preprocessing = config.get('preprocessing', {})
+        
+        # Initialize preprocessor with integrated pipeline
         preprocessor = DataPreprocessor(
-            min_length=50,  # Minimum 50 characters
-            max_length=500000,  # Maximum 500k characters per file
+            raw_data_dir=raw_dir,
+            cleaned_data_dir=cleaned_dir,
+            deduped_data_dir=deduped_dir,
+            use_enhanced_ingestion=not args.no_ingestion,
+            use_deduplication=not args.no_dedup,
+            config=config,
+            min_length=preprocessing.get('min_length', 50),
+            max_length=preprocessing.get('max_length', 500000),
             remove_urls=True,
             remove_emails=True,
-            normalize_whitespace=True
+            normalize_whitespace=preprocessing.get('normalize_whitespace', True)
         )
         
         # Process all files
         results = preprocessor.process_all()
         
         # Print summary
-        logger.info("=== Preprocessing Summary ===")
+        logger.info("=== Integrated Pipeline Summary ===")
         logger.info(f"Files processed: {results['processed']}")
         logger.info(f"Files failed: {results['failed']}")
         logger.info(f"Total characters: {results['total_chars']:,}")
         logger.info(f"Output files: {len(results['output_files'])}")
         
+        # Print pipeline information
+        pipeline_info = results.get('pipeline_used', {})
+        logger.info(f"Enhanced ingestion: {pipeline_info.get('enhanced_ingestion', False)}")
+        logger.info(f"Deduplication: {pipeline_info.get('deduplication', False)}")
+        logger.info(f"Final output: {pipeline_info.get('final_output_dir', 'N/A')}")
+        
         if results['processed'] == 0:
             logger.warning("No files were successfully processed!")
             logger.info("Please check that you have files in the data/raw directory")
-            logger.info("Supported formats: .txt, .pdf, .docx, .md")
+            logger.info("Supported formats: .txt, .pdf, .docx, .md, .html, .epub")
         
     except Exception as e:
         logger.error(f"Preprocessing failed: {e}")

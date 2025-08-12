@@ -8,20 +8,24 @@
     Usage: .\run.ps1 [-Stage <stage>] [-Config <config_file>] [-Help]
     
     Stages:
+    - ingest:     Enhanced document ingestion (HTML, EPUB, PDF with OCR)
+    - dedup:      Deduplication with hash and embedding methods
     - preprocess: Run only the data preprocessing
     - tokenizer:  Train the tokenizer (requires preprocessed data)
     - train:      Train the model (requires tokenizer)
     - eval:       Run evaluation (requires trained model)
     - finetune:   Fine-tune a pre-trained model
     - inference:  Run interactive text generation
+    - gguf:       Convert model to GGUF format with quantization
     - download:   Download a HuggingFace model
+    - test:       Run comprehensive test suite
     - all:        Run all stages (default)
     
     Example: .\run.ps1 -Stage train -Config config.json
 #>
 
 param(
-    [ValidateSet("preprocess", "tokenizer", "train", "eval", "finetune", "inference", "download", "all")]
+    [ValidateSet("preprocess", "tokenizer", "train", "eval", "finetune", "inference", "download", "ingest", "dedup", "gguf", "test", "all")]
     [string]$Stage = "all",
     
     [string]$Config = "config.json",
@@ -45,11 +49,13 @@ $DATA_DIR = Join-Path $SCRIPT_DIR "data"
 $RAW_DATA_DIR = Join-Path $DATA_DIR "raw"
 $CLEANED_DATA_DIR = Join-Path $DATA_DIR "cleaned"
 $TOKENIZED_DATA_DIR = Join-Path $DATA_DIR "tokens"
+$DEDUPED_DATA_DIR = Join-Path $DATA_DIR "deduped"
 $TOKENIZER_DIR = Join-Path $EXPORT_DIR "tokenizer"
 $CHECKPOINT_DIR = Join-Path $EXPORT_DIR "checkpoints"
+$GGUF_DIR = Join-Path $EXPORT_DIR "gguf"
 
 # Create necessary directories
-$null = New-Item -ItemType Directory -Force -Path $LOG_DIR, $EXPORT_DIR, $RAW_DATA_DIR, $CLEANED_DATA_DIR, $TOKENIZED_DATA_DIR, $TOKENIZER_DIR, $CHECKPOINT_DIR
+$null = New-Item -ItemType Directory -Force -Path $LOG_DIR, $EXPORT_DIR, $RAW_DATA_DIR, $CLEANED_DATA_DIR, $TOKENIZED_DATA_DIR, $DEDUPED_DATA_DIR, $TOKENIZER_DIR, $CHECKPOINT_DIR, $GGUF_DIR
 
 # Logging function
 function Write-Log {
@@ -220,6 +226,85 @@ function Invoke-EvalStage {
     return (Invoke-SafeCommand -Command $command -ErrorMsg "Evaluation failed" -SuccessMsg "Evaluation completed successfully")
 }
 
+# Function to run enhanced document ingestion
+function Invoke-IngestStage {
+    Write-Log "=== Starting Enhanced Document Ingestion ==="
+    
+    # Check if raw data directory exists
+    if (-not (Test-Path $RAW_DATA_DIR)) {
+        Write-Log "Raw data directory not found: $RAW_DATA_DIR" "ERROR"
+        return $false
+    }
+    
+    # Check for supported file types
+    $supportedFiles = Get-ChildItem -Path $RAW_DATA_DIR -Recurse | Where-Object { 
+        $_.Extension -in @('.txt', '.pdf', '.docx', '.html', '.epub', '.md') 
+    }
+    
+    if (-not $supportedFiles) {
+        Write-Log "No supported files found in $RAW_DATA_DIR" "WARNING"
+        Write-Log "Supported formats: TXT, PDF, DOCX, HTML, EPUB, Markdown"
+        return $false
+    }
+    
+    Write-Log "Found $($supportedFiles.Count) supported files for ingestion"
+    
+    $command = "$PYTHON scripts/run_ingestion.py --input $RAW_DATA_DIR --output $CLEANED_DATA_DIR --recursive --verbose"
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "Document ingestion failed" -SuccessMsg "Document ingestion completed successfully")
+}
+
+# Function to run deduplication
+function Invoke-DedupStage {
+    Write-Log "=== Starting Data Deduplication ==="
+    
+    # Check if cleaned data exists
+    if (-not (Get-ChildItem -Path $CLEANED_DATA_DIR -File -Recurse)) {
+        Write-Log "No cleaned data found in $CLEANED_DATA_DIR" "ERROR"
+        Write-Log "Please run ingestion or preprocessing first"
+        return $false
+    }
+    
+    $dedupOutputDir = Join-Path $DATA_DIR "deduped"
+    $null = New-Item -ItemType Directory -Force -Path $dedupOutputDir
+    
+    $command = "$PYTHON data/dedup.py --input-dir $CLEANED_DATA_DIR --output-dir $dedupOutputDir --similarity-threshold 0.85"
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "Deduplication failed" -SuccessMsg "Deduplication completed successfully")
+}
+
+# Function to run GGUF conversion
+function Invoke-GgufStage {
+    Write-Log "=== Starting GGUF Conversion ==="
+    
+    # Check if model exists
+    $latestCheckpoint = Get-ChildItem -Path $CHECKPOINT_DIR -Filter "*.pt" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $latestCheckpoint) {
+        Write-Log "No model checkpoints found in $CHECKPOINT_DIR" "ERROR"
+        return $false
+    }
+    
+    $ggufOutputDir = Join-Path $EXPORT_DIR "gguf"
+    $null = New-Item -ItemType Directory -Force -Path $ggufOutputDir
+    
+    $command = "$PYTHON tools/conversion_pipeline.py $($latestCheckpoint.FullName) $ggufOutputDir --quantization f16 q8_0 q4_0 --tokenizer $TOKENIZER_DIR"
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "GGUF conversion failed" -SuccessMsg "GGUF conversion completed successfully")
+}
+
+# Function to run comprehensive tests
+function Invoke-TestStage {
+    Write-Log "=== Running Comprehensive Test Suite ==="
+    
+    # Check if pytest is available
+    try {
+        & $PYTHON -m pytest --version | Out-Null
+    } catch {
+        Write-Log "pytest not found. Installing..." "WARNING"
+        & $PYTHON -m pip install pytest
+    }
+    
+    $command = "$PYTHON -m pytest tests/ -v --tb=short"
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "Tests failed" -SuccessMsg "All tests passed successfully")
+}
+
 # Function to run fine-tuning
 function Invoke-FinetuneStage {
     Write-Log "=== Starting Model Fine-tuning ==="
@@ -280,6 +365,12 @@ $startTime = Get-Date
 
 try {
     switch ($Stage) {
+        "ingest" {
+            $success = Invoke-IngestStage
+        }
+        "dedup" {
+            $success = Invoke-DedupStage
+        }
         "preprocess" {
             $success = Invoke-PreprocessStage
         }
@@ -298,14 +389,23 @@ try {
         "inference" {
             $success = Invoke-InferenceStage
         }
+        "gguf" {
+            $success = Invoke-GgufStage
+        }
         "download" {
             $success = Invoke-DownloadStage
         }
+        "test" {
+            $success = Invoke-TestStage
+        }
         "all" {
-            $success = (Invoke-PreprocessStage) -and 
+            $success = (Invoke-IngestStage) -and 
+                      (Invoke-DedupStage) -and 
+                      (Invoke-PreprocessStage) -and 
                       (Invoke-TokenizerStage) -and 
                       (Invoke-TrainStage) -and 
-                      (Invoke-EvalStage)
+                      (Invoke-EvalStage) -and
+                      (Invoke-GgufStage)
         }
     }
 } catch {

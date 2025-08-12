@@ -1,23 +1,29 @@
-# Data directories - exclude all data
-data/raw/**/*
-!data/raw/
-!data/raw/.gitkeep
+# Data directories - exclude all data by default
+# data/raw/**/*
+# !data/raw/
+# !data/raw/.gitkeep
 
-data/finetune/**/*
-!data/finetune/
-!data/finetune/.gitkeep
+# data/finetune/**/*
+# !data/finetune/
+# !data/finetune/.gitkeep
 
-# Specific content folders to exclude (add more as needed)
-data/raw/*/content/
-data/raw/*/content/**/*
-data/raw/*/*/content/
-data/raw/*/*/content/**/*
+# Specific content folders to exclude
+# data/raw/*/content/
+# data/raw/*/content/**/*
+# data/raw/*/*/content/
+# data/raw/*/*/content/**/*
 
-# Other data directories
-data/processed/
-data/cleaned/
-data/tokens/
-data/vocab/
+# # Other data directories
+# data/processed/
+# data/cleaned/
+# data/tokens/
+# data/vocab/
+
+# Allow package files
+!llmbuilder/
+!llmbuilder/**/*.py
+!llmbuilder/**/*.md
+!llmbuilder/**/*.txt
 
 # Model checkpoints and outputs
 models/
@@ -72,6 +78,8 @@ venv/
 env/
 ENV/
 .env
+
+.kiro/
 
 # IDE specific files
 .idea/
@@ -133,3 +141,9 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+*.log
+*.lock
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
