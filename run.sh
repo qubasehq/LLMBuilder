@@ -16,7 +16,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-CPU_ONLY=false
+CPU_ONLY=true
 STAGE="all"
 VERBOSE=false
 
@@ -197,18 +197,53 @@ run_tokenizer_training() {
     
     print_status "Starting tokenizer training..."
     
-    if python training/train_tokenizer.py; then
+    # Prefer deduplicated data if available
+    INPUT_DIR="data/cleaned"
+    if [ -d "data/deduped" ] && [ -n "$(find data/deduped -type f 2>/dev/null)" ]; then
+        INPUT_DIR="data/deduped"
+        print_status "Using deduplicated data from $INPUT_DIR"
+    fi
+    
+    # Ensure output directory exists
+    mkdir -p exports/tokenizer
+    
+    # Call tokenizer trainer with required arguments
+    if python training/train_tokenizer.py \
+        --input-dir "$INPUT_DIR" \
+        --output-dir "exports/tokenizer" \
+        --tokenizer-type sentencepiece \
+        --model-type bpe \
+        --vocab-size 16000; then
         print_success "Tokenizer training completed"
     else
         print_error "Tokenizer training failed"
         exit 1
     fi
     
-    # Check output
-    if [ -f "tokenizer/tokenizer.model" ] && [ -f "data/tokens/tokens.pt" ]; then
-        print_success "Tokenizer and tokenized dataset created successfully"
+    # Check output and then tokenize corpus to tensors for training
+    if [ -f "exports/tokenizer/sentencepiece.model" ]; then
+        print_success "Tokenizer artifacts created in exports/tokenizer"
+        mkdir -p data/tokens
+        # Tokenize deduped or cleaned data into a single tokens.pt file
+        python training/tokenize_corpus.py \
+            --input-dir "$INPUT_DIR" \
+            --tokenizer "exports/tokenizer/sentencepiece.model" \
+            --output "data/tokens/tokens.pt"
+        if [ $? -ne 0 ]; then
+            print_error "Tokenization to tensors failed"
+            exit 1
+        fi
+        if [ -f "data/tokens/tokens.pt" ]; then
+            print_success "Tokenized data saved to data/tokens/tokens.pt"
+        else
+            print_error "Tokenized data not found after tokenization"
+            exit 1
+        fi
+    elif [ -f "exports/tokenizer/tokenizer.json" ]; then
+        print_success "HF tokenizer created (tokenizer.json). Add a HF tokenization step if needed."
+        print_warning "Training expects .pt tokens under data/tokens; current pipeline supports SentencePiece."
     else
-        print_error "Tokenizer output files not found"
+        print_error "Tokenizer output files not found in exports/tokenizer"
         exit 1
     fi
 }
@@ -222,8 +257,9 @@ run_model_training() {
         exit 1
     fi
     
-    if [ ! -f "tokenizer/tokenizer.model" ]; then
-        print_error "No tokenizer found. Please run tokenizer training first."
+    # Ensure tokenizer artifacts exist in exports/tokenizer
+    if [ ! -f "exports/tokenizer/sentencepiece.model" ] && [ ! -f "exports/tokenizer/tokenizer.json" ]; then
+        print_error "No tokenizer found in exports/tokenizer. Please run tokenizer training first."
         exit 1
     fi
     
@@ -234,7 +270,10 @@ run_model_training() {
         print_status "Training on CPU (forced)"
     fi
     
-    if python training/train.py; then
+    # Pass tokenizer and checkpoint directories explicitly
+    if python training/train.py \
+        --tokenizer-dir "exports/tokenizer" \
+        --checkpoint-dir "exports/checkpoints"; then
         print_success "Model training completed"
     else
         print_error "Model training failed"
@@ -312,7 +351,7 @@ run_gguf_conversion() {
     
     mkdir -p exports/gguf
     
-    if python tools/conversion_pipeline.py "$LATEST_CHECKPOINT" exports/gguf --quantization f16 q8_0 q4_0 --tokenizer exports/tokenizer; then
+    if python tools/conversion_pipeline.py "$LATEST_CHECKPOINT" exports/gguf --quantization f16 q8_0 q4_0 --tokenizer tokenizer/tokenizer.model; then
         print_success "GGUF conversion completed"
     else
         print_error "GGUF conversion failed"
@@ -396,11 +435,16 @@ run_inference() {
         return 1
     fi
     
-    # Get the latest checkpoint
-    LATEST_CHECKPOINT=$(ls -t $CHECKPOINT_DIR/*.pt 2>/dev/null | head -1)
-    TOKENIZER_DIR="exports/tokenizer"
+    # Use GGUF model for inference (fixes tokenizer mismatch)
+    GGUF_MODEL="exports/gguf/best_model_f16.gguf"
+    TOKENIZER_PATH="tokenizer/tokenizer.model"
     
-    if python inference.py --model "$LATEST_CHECKPOINT" --tokenizer "$TOKENIZER_DIR" --config config.json --interactive; then
+    if [ ! -f "$GGUF_MODEL" ]; then
+        print_error "GGUF model not found: $GGUF_MODEL"
+        return 1
+    fi
+    
+    if python inference.py --model "$GGUF_MODEL" --tokenizer "$TOKENIZER_PATH" --config config.json --interactive; then
         print_success "Inference session completed"
     else
         print_error "Inference failed"

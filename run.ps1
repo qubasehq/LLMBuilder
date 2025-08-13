@@ -129,8 +129,6 @@ if (-not (Test-CommandExists "python")) {
 $pythonVersion = & $PYTHON -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"
 $pythonMajor = [int](& $PYTHON -c "import sys; print(sys.version_info.major)")
 $pythonMinor = [int](& $PYTHON -c "import sys; print(sys.version_info.minor)")
-$pythonMicro = [int](& $PYTHON -c "import sys; print(sys.version_info.micro)")
-
 # Check if Python version is at least 3.8
 $isValidVersion = $false
 
@@ -190,8 +188,46 @@ function Invoke-TokenizerStage {
     # Create tokenizer directory if it doesn't exist
     $null = New-Item -ItemType Directory -Force -Path $TOKENIZER_DIR
     
-    $command = "$PYTHON training/train_tokenizer.py --config $Config --input-dir $CLEANED_DATA_DIR --output-dir $TOKENIZER_DIR"
-    return (Invoke-SafeCommand -Command $command -ErrorMsg "Tokenizer training failed" -SuccessMsg "Tokenizer training completed successfully")
+    # Use cleaned data from deduped directory if it exists and has files, otherwise use cleaned directory
+    $hasDedupedFiles = $false
+    if (Test-Path -Path $DEDUPED_DATA_DIR -PathType Container) {
+        $hasDedupedFiles = (Get-ChildItem -Path $DEDUPED_DATA_DIR -File -Recurse).Count -gt 0
+    }
+    
+    $inputDir = if ($hasDedupedFiles) { $DEDUPED_DATA_DIR } else { $CLEANED_DATA_DIR }
+    
+    # Build the command with required parameters
+    $command = "$PYTHON training/train_tokenizer.py --input-dir ""$inputDir"" --output-dir ""$TOKENIZER_DIR"" --tokenizer-type sentencepiece --model-type bpe --vocab-size 16000"
+    
+    Write-Log "Running: $command"
+    $ok = (Invoke-SafeCommand -Command $command -ErrorMsg "Tokenizer training failed" -SuccessMsg "Tokenizer training completed successfully")
+    if (-not $ok) { return $false }
+
+    # After successful training, tokenize corpus into tensors
+    $spModel = Join-Path $TOKENIZER_DIR "sentencepiece.model"
+    if (Test-Path $spModel) {
+        $null = New-Item -ItemType Directory -Force -Path $TOKENIZED_DATA_DIR
+        $outTokens = Join-Path $TOKENIZED_DATA_DIR "tokens.pt"
+        $tokCmd = "$PYTHON training/tokenize_corpus.py --input-dir ""$inputDir"" --tokenizer ""$spModel"" --output ""$outTokens"""
+        Write-Log "Running: $tokCmd"
+        $tokOk = (Invoke-SafeCommand -Command $tokCmd -ErrorMsg "Tokenization to tensors failed" -SuccessMsg "Tokenization completed successfully")
+        if (-not $tokOk) { return $false }
+        if (-not (Test-Path $outTokens)) {
+            Write-Log "Tokenized data not found at $outTokens after tokenization" "ERROR"
+            return $false
+        }
+        Write-Log "Tokenized data saved to $outTokens" "SUCCESS"
+        return $true
+    } else {
+        # If using HF tokenizer.json, we currently do not auto-tokenize
+        $hfModel = Join-Path $TOKENIZER_DIR "tokenizer.json"
+        if (Test-Path $hfModel) {
+            Write-Log "Found HuggingFace tokenizer.json; current pipeline auto-tokenization supports SentencePiece .model only" "WARNING"
+            return $true
+        }
+        Write-Log "Tokenizer output files not found in $TOKENIZER_DIR" "ERROR"
+        return $false
+    }
 }
 
 # Function to train the model
@@ -199,8 +235,10 @@ function Invoke-TrainStage {
     Write-Log "=== Starting Model Training ==="
     
     # Check if tokenizer exists
-    if (-not (Test-Path (Join-Path $TOKENIZER_DIR "tokenizer.model"))) {
-        Write-Log "Tokenizer not found in $TOKENIZER_DIR" "ERROR"
+    $spModel = Join-Path $TOKENIZER_DIR "sentencepiece.model"
+    $hfModel = Join-Path $TOKENIZER_DIR "tokenizer.json"
+    if (-not (Test-Path $spModel) -and -not (Test-Path $hfModel)) {
+        Write-Log "Tokenizer not found in $TOKENIZER_DIR (expected sentencepiece.model or tokenizer.json)" "ERROR"
         return $false
     }
     
@@ -223,7 +261,47 @@ function Invoke-EvalStage {
     }
     
     $command = "$PYTHON eval/eval.py --config $Config --tokenizer-dir $TOKENIZER_DIR --model-path $($latestCheckpoint.FullName)"
-    return (Invoke-SafeCommand -Command $command -ErrorMsg "Evaluation failed" -SuccessMsg "Evaluation completed successfully")
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "Evaluation failed" -SuccessMsg "Model evaluation completed")
+}
+
+# Function to run GGUF conversion
+function Invoke-GgufStage {
+    Write-Log "=== Starting GGUF Conversion ==="
+    
+    # Check if model exists
+    $latestCheckpoint = Get-ChildItem -Path $CHECKPOINT_DIR -Filter "*.pt" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    
+    if (-not $latestCheckpoint) {
+        Write-Log "No model checkpoints found in $CHECKPOINT_DIR" "ERROR"
+        return $false
+    }
+    
+    # Create GGUF directory if it doesn't exist
+    if (-not (Test-Path $GGUF_DIR)) {
+        New-Item -ItemType Directory -Path $GGUF_DIR -Force | Out-Null
+    }
+    
+    # Run GGUF conversion with multiple quantization levels
+    $command = "$PYTHON tools/conversion_pipeline.py `"$($latestCheckpoint.FullName)`" `"$GGUF_DIR`" --quantization f16 q8_0 q4_0 --tokenizer `"tokenizer/tokenizer.model`""
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "GGUF conversion failed" -SuccessMsg "GGUF conversion completed")
+}
+
+# Function to run data preprocessing
+function Invoke-PreprocessStage {
+    Write-Log "=== Starting Data Preprocessing ==="
+    
+    # Check if cleaned data exists
+    if (-not (Get-ChildItem -Path $CLEANED_DATA_DIR -File -Recurse)) {
+        Write-Log "No cleaned data found in $CLEANED_DATA_DIR" "WARNING"
+        Write-Log "Running ingestion stage first..."
+        if (-not (Invoke-IngestStage)) {
+            Write-Log "Ingestion failed, cannot proceed with preprocessing" "ERROR"
+            return $false
+        }
+    }
+    
+    $command = "$PYTHON training/preprocess.py --config $Config --raw-dir $RAW_DATA_DIR --cleaned-dir $CLEANED_DATA_DIR --deduped-dir $DEDUPED_DATA_DIR"
+    return (Invoke-SafeCommand -Command $command -ErrorMsg "Preprocessing failed" -SuccessMsg "Preprocessing completed successfully")
 }
 
 # Function to run enhanced document ingestion
@@ -341,7 +419,12 @@ function Invoke-InferenceStage {
     }
     
     Write-Log "Starting interactive text generation..."
-    $command = "$PYTHON inference.py --model $($latestCheckpoint.FullName) --tokenizer $TOKENIZER_DIR --config $Config --interactive"
+    $ggufModel = "exports/gguf/best_model_f16.gguf"
+    if (-not (Test-Path $ggufModel)) {
+        Write-Log "GGUF model not found: $ggufModel" "ERROR"
+        return $false
+    }
+    $command = "$PYTHON inference.py --model $ggufModel --tokenizer tokenizer/tokenizer.model --config $Config --interactive"
     return (Invoke-SafeCommand -Command $command -ErrorMsg "Inference failed" -SuccessMsg "Inference session completed")
 }
 

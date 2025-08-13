@@ -847,13 +847,22 @@ class SentencePieceTokenizerTrainer(TokenizerTrainer):
             
             start_time = time.time()
             
-            # Validate input files
+            # Validate input files and ensure text content
             valid_files = []
             total_size = 0
             for file_path in input_files:
                 if file_path.exists() and file_path.stat().st_size > 0:
-                    valid_files.append(file_path)
-                    total_size += file_path.stat().st_size
+                    # Check if it's a text file (not binary)
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as test_file:
+                            content = test_file.read(1000)  # Read first 1000 chars
+                            if content.strip():  # Has actual content
+                                valid_files.append(file_path)
+                                total_size += file_path.stat().st_size
+                            else:
+                                logger.warning(f"Skipping file with no content: {file_path}")
+                    except Exception as e:
+                        logger.warning(f"Skipping unreadable file {file_path}: {e}")
                 else:
                     logger.warning(f"Skipping empty or missing file: {file_path}")
             
@@ -865,23 +874,93 @@ class SentencePieceTokenizerTrainer(TokenizerTrainer):
             # Adjust vocab_size based on corpus size if needed
             adjusted_vocab_size = self._adjust_vocab_size_for_corpus(total_size)
             if adjusted_vocab_size != self.config.vocab_size:
-                logger.info(f"Adjusting vocab_size from {self.config.vocab_size} to {adjusted_vocab_size} based on corpus size")
+                logger.info(f"Adjusting vocab_size from {self.config.vocab_size} to {adjusted_vocab_size} based on corpus size ({total_size/1024:.1f} KB)")
+                self.config.vocab_size = adjusted_vocab_size
+                
+            # Ensure minimum vocabulary size for very small corpora
+            min_vocab = max(50, min(1000, int(total_size / 100)))  # At least 1 vocab entry per 100 bytes
+            if adjusted_vocab_size < min_vocab:
+                adjusted_vocab_size = min_vocab
+                logger.info(f"Further adjusting vocab_size to {adjusted_vocab_size} for minimum coverage")
                 self.config.vocab_size = adjusted_vocab_size
             
             # Prepare training arguments
-            input_files_str = ",".join(str(f) for f in valid_files)
+            # Create a single corpus file to avoid issues with spaces in file paths
             output_dir.mkdir(parents=True, exist_ok=True)
             model_prefix = str(output_dir / "sentencepiece")
+            corpus_path = output_dir / "corpus.txt"
             
-            # Build comprehensive training command
-            train_args = self._build_training_args(input_files_str, model_prefix)
+            total_chars = 0
+            with open(corpus_path, 'w', encoding='utf-8') as corpus_out:
+                for fp in valid_files:
+                    try:
+                        with open(fp, 'r', encoding='utf-8', errors='ignore') as fin:
+                            content = fin.read()
+                            if content.strip():  # Only write non-empty content
+                                # Split long lines to avoid SentencePiece max_sentence_length issues
+                                lines = content.split('\n')
+                                for line in lines:
+                                    line = line.strip()
+                                    if line:  # Skip empty lines
+                                        # Split very long lines into chunks
+                                        max_line_length = 2000  # Conservative limit
+                                        if len(line) > max_line_length:
+                                            # Split at sentence boundaries or spaces
+                                            chunks = []
+                                            words = line.split()
+                                            current_chunk = []
+                                            current_length = 0
+                                            
+                                            for word in words:
+                                                if current_length + len(word) + 1 > max_line_length:
+                                                    if current_chunk:
+                                                        chunks.append(' '.join(current_chunk))
+                                                        current_chunk = [word]
+                                                        current_length = len(word)
+                                                    else:
+                                                        # Single word too long, truncate it
+                                                        chunks.append(word[:max_line_length])
+                                                        current_chunk = []
+                                                        current_length = 0
+                                                else:
+                                                    current_chunk.append(word)
+                                                    current_length += len(word) + 1
+                                            
+                                            if current_chunk:
+                                                chunks.append(' '.join(current_chunk))
+                                            
+                                            for chunk in chunks:
+                                                corpus_out.write(chunk + '\n')
+                                                total_chars += len(chunk)
+                                        else:
+                                            corpus_out.write(line + '\n')
+                                            total_chars += len(line)
+                                corpus_out.write("\n")  # File separation
+                    except Exception as fe:
+                        logger.warning(f"Failed to read {fp}: {fe}")
             
-            # Log the training command for debugging
-            logger.debug(f"SentencePiece training command: {' '.join(train_args)}")
+            # Check if corpus has content
+            if total_chars == 0:
+                raise ValueError("No valid text content found in input files")
+                
+            corpus_size = corpus_path.stat().st_size
+            if corpus_size == 0:
+                raise ValueError("Created corpus file is empty")
+                
+            logger.info(f"Created corpus with {total_chars:,} characters")
+            # Use forward slashes for cross-platform compatibility
+            input_files_str = str(corpus_path).replace('\\', '/')
             
-            # Train model with error handling
+            # Build comprehensive training parameters (kwargs)
+            train_params = self._build_training_params(input_files_str, model_prefix)
+            
+            # Log the training parameters for debugging (mask long input list)
+            logger.debug("SentencePiece training params: " + 
+                         ", ".join([f"{k}={('<paths>' if k=='input' else v)}" for k, v in train_params.items()]))
+            
+            # Train model with error handling using kwargs to avoid quoting issues
             try:
-                spm.SentencePieceTrainer.train(" ".join(train_args))
+                spm.SentencePieceTrainer.train(**train_params)
             except RuntimeError as e:
                 error_msg = str(e)
                 if "Vocabulary size too high" in error_msg:
@@ -892,8 +971,8 @@ class SentencePieceTokenizerTrainer(TokenizerTrainer):
                         max_vocab = int(match.group(1))
                         logger.warning(f"Vocab size too high, retrying with {max_vocab}")
                         self.config.vocab_size = max_vocab
-                        train_args = self._build_training_args(input_files_str, model_prefix)
-                        spm.SentencePieceTrainer.train(" ".join(train_args))
+                        train_params = self._build_training_params(input_files_str, model_prefix)
+                        spm.SentencePieceTrainer.train(**train_params)
                     else:
                         raise
                 else:
@@ -955,71 +1034,63 @@ class SentencePieceTokenizerTrainer(TokenizerTrainer):
         else:
             return self.config.vocab_size  # Use requested size for larger corpora
     
-    def _build_training_args(self, input_files_str: str, model_prefix: str) -> List[str]:
-        """Build comprehensive SentencePiece training arguments."""
-        train_args = [
-            f"--input={input_files_str}",
-            f"--model_prefix={model_prefix}",
-            f"--vocab_size={self.config.vocab_size}",
-            f"--model_type={self.config.model_type}",
-        ]
+    def _build_training_params(self, input_files_str: str, model_prefix: str) -> Dict[str, Any]:
+        """Build comprehensive SentencePiece training kwargs to avoid quoting issues."""
+        params: Dict[str, Any] = {
+            "input": input_files_str,
+            "model_prefix": model_prefix,
+            "vocab_size": self.config.vocab_size,
+            "model_type": self.config.model_type,
+            "normalization_rule_name": "nfkc_cf" if self.config.normalization else "identity",
+        }
         
-        # Normalization
-        if self.config.normalization:
-            train_args.append("--normalization_rule_name=nfkc_cf")
-        else:
-            train_args.append("--normalization_rule_name=identity")
-        
-        # Handle special tokens more carefully
-        control_symbols = []
-        unk_piece = None
-        
+        # Special tokens handling
+        control_symbols: List[str] = []
+        unk_piece: Optional[str] = None
         for key, token in self.config.special_tokens.items():
             if key == "unk_token":
                 unk_piece = token
             else:
                 control_symbols.append(token)
-        
-        # Add control symbols (excluding unk_token)
         if control_symbols:
-            train_args.append(f"--control_symbols={','.join(control_symbols)}")
-        
-        # Set unk_piece if specified
+            params["control_symbols"] = ",".join(control_symbols)
         if unk_piece:
-            train_args.append(f"--unk_piece={unk_piece}")
+            params["unk_piece"] = unk_piece
         
-        # Add all trainer-specific arguments
+        # Set default parameters for better handling of long text
+        params.update({
+            "character_coverage": 0.9995,
+            "max_sentence_length": 8192,  # Increased from default 4192
+            "num_threads": 1,
+            "input_sentence_size": 0,
+            "shuffle_input_sentence": True,
+            "split_by_whitespace": True,
+        })
+        
+        # Trainer-specific arguments (override defaults)
         for key, value in self.config.trainer_args.items():
-            if key == "character_coverage":
-                train_args.append(f"--character_coverage={value}")
-            elif key == "split_by_whitespace":
-                train_args.append(f"--split_by_whitespace={str(value).lower()}")
-            elif key == "max_sentence_length":
-                train_args.append(f"--max_sentence_length={value}")
-            elif key == "num_threads":
-                train_args.append(f"--num_threads={value}")
-            elif key == "input_sentence_size":
-                train_args.append(f"--input_sentence_size={value}")
-            elif key == "shuffle_input_sentence":
-                train_args.append(f"--shuffle_input_sentence={str(value).lower()}")
-            elif key == "seed_sentencepiece_size":
-                train_args.append(f"--seed_sentencepiece_size={value}")
-            elif key == "shrinking_factor":
-                train_args.append(f"--shrinking_factor={value}")
-            elif key == "max_sentencepiece_length":
-                train_args.append(f"--max_sentencepiece_length={value}")
-            elif key == "split_by_unicode_script":
-                train_args.append(f"--split_by_unicode_script={str(value).lower()}")
-            elif key == "split_by_number":
-                train_args.append(f"--split_by_number={str(value).lower()}")
-            elif key == "split_digits":
-                train_args.append(f"--split_digits={str(value).lower()}")
-            elif key == "byte_fallback":
-                train_args.append(f"--byte_fallback={str(value).lower()}")
-            elif key == "hard_vocab_limit":
-                train_args.append(f"--hard_vocab_limit={str(value).lower()}")
+            if key in {
+                "character_coverage",
+                "max_sentence_length",
+                "num_threads",
+                "input_sentence_size",
+                "seed_sentencepiece_size",
+                "shrinking_factor",
+                "max_sentencepiece_length",
+            }:
+                params[key] = value
+            elif key in {
+                "split_by_whitespace",
+                "shuffle_input_sentence",
+                "split_by_unicode_script",
+                "split_by_number",
+                "split_digits",
+                "byte_fallback",
+                "hard_vocab_limit",
+            }:
+                params[key] = bool(value)
         
-        return train_args
+        return params
     
     def _save_artifacts(self, output_dir: Path):
         """Save tokenizer artifacts and metadata."""

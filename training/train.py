@@ -15,6 +15,10 @@ from tqdm import tqdm
 import math
 import json
 import traceback
+import sys
+from pathlib import Path
+import json
+sys.path.append(str(Path(__file__).parent.parent))
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -34,8 +38,10 @@ class Trainer:
     def __init__(self, config_path: str):
         """Initialize trainer with configuration."""
         try:
-            # Load configuration
-            self.config = ConfigManager.load_config(config_path)
+            # Load configuration from JSON and ensure vocabulary consistency
+            with open(config_path, 'r') as f:
+                self.config = json.load(f)
+            self._ensure_vocab_consistency()
             self.config_path = config_path
             
             # Setup logging first
@@ -95,6 +101,52 @@ class Trainer:
             logger.error(f"Failed to initialize trainer: {e}")
             logger.error(traceback.format_exc())
             raise
+    
+    def _ensure_vocab_consistency(self):
+        """Ensure vocabulary size consistency between tokenizer and model"""
+        try:
+            # Get actual tokenizer vocab size from data or tokenizer file
+            actual_vocab_size = None
+            
+            # Try to get from tokenizer file
+            tokenizer_paths = [
+                Path(self.config.get('paths', {}).get('tokenizer_dir', 'exports/tokenizer')) / 'tokenizer.model',
+                Path('exports/tokenizer') / 'tokenizer.model',
+                Path('tokenizer') / 'tokenizer.model'
+            ]
+            
+            for tokenizer_path in tokenizer_paths:
+                if tokenizer_path.exists():
+                    import sentencepiece as spm
+                    sp = spm.SentencePieceProcessor()
+                    sp.load(str(tokenizer_path))
+                    actual_vocab_size = sp.vocab_size()
+                    break
+            
+            # If no tokenizer found, use data vocab size if available
+            if actual_vocab_size is None and hasattr(self, 'train_dataset'):
+                try:
+                    actual_vocab_size = self.train_dataset.vocab_size
+                except:
+                    pass
+            
+            if actual_vocab_size is not None:
+                # Update model vocab size to match actual data
+                old_vocab_size = self.config['model'].get('vocab_size')
+                if old_vocab_size != actual_vocab_size:
+                    logger.warning(f"Config vocab_size ({old_vocab_size}) != data vocab_size ({actual_vocab_size})")
+                    logger.info(f"Updating config vocab_size to {actual_vocab_size}")
+                    self.config['model']['vocab_size'] = actual_vocab_size
+                
+                logger.info(f"✓ Vocabulary size synchronized: {actual_vocab_size}")
+                return actual_vocab_size
+            else:
+                logger.warning("⚠ Tokenizer not found, using config vocab_size")
+                return self.config['model'].get('vocab_size', 16000)
+                
+        except Exception as e:
+            logger.warning(f"⚠ Could not auto-detect vocab size: {e}")
+            return self.config['model'].get('vocab_size', 16000)
     
     def _validate_config(self):
         """Validate configuration structure and required fields."""
@@ -213,9 +265,15 @@ class Trainer:
             # Log model configuration
             logger.info(f"Model configuration: {model_config}")
             
-            # Initialize model
+            # Auto-detect vocabulary size from tokenizer if not specified
+            vocab_size = model_config.get('vocab_size')
+            if vocab_size is None:
+                vocab_size = self.tokenizer.vocab_size()
+                logger.info(f"Auto-detected vocab_size: {vocab_size}")
+            
+            # Initialize model with correct vocab size
             self.model = GPTModel(
-                vocab_size=model_config['vocab_size'],
+                vocab_size=vocab_size,
                 n_layer=model_config['num_layers'],
                 n_head=model_config['num_heads'],
                 n_embd=model_config['embedding_dim'],

@@ -1,6 +1,6 @@
 {
   "model": {
-    "vocab_size": 16000,
+    "vocab_size": 6397,
     "embedding_dim": 384,
     "num_layers": 6,
     "num_heads": 6,
@@ -67,7 +67,108 @@
     "remove_empty_lines": true,
     "encoding": "utf-8",
     "chunk_size": 1000000,
-    "supported_formats": ["txt", "pdf", "docx", "pptx", "md", "html", "epub"]
+    "supported_formats": [
+      "txt",
+      "pdf",
+      "docx",
+      "pptx",
+      "md",
+      "html",
+      "epub"
+    ],
+    "advanced_cleaning": {
+      "enabled": true,
+      "modules": {
+        "boilerplate_removal": {
+          "enabled": true,
+          "custom_patterns": [
+            "(copyright|all rights reserved|quiz|correct answer|\u00c2\u00a9)",
+            "\\b[a-d]\\.\\s*){2,}"
+          ],
+          "remove_headers": true,
+          "remove_footers": true,
+          "min_line_length": 10
+        },
+        "language_filtering": {
+          "enabled": true,
+          "target_languages": [
+            "en"
+          ],
+          "confidence_threshold": 0.8,
+          "detection_method": "fasttext",
+          "fallback_enabled": true
+        },
+        "domain_filtering": {
+          "enabled": true,
+          "method": "keyword",
+          "threshold": 0.85,
+          "cybersecurity_keywords": [
+            "firewall",
+            "malware",
+            "vulnerability",
+            "encryption",
+            "security",
+            "attack",
+            "threat",
+            "exploit",
+            "penetration",
+            "authentication",
+            "authorization",
+            "cryptography",
+            "phishing",
+            "ransomware",
+            "botnet",
+            "intrusion",
+            "detection",
+            "prevention",
+            "antivirus",
+            "forensics"
+          ]
+        },
+        "quality_assessment": {
+          "enabled": true,
+          "grammar_tool": "languagetool",
+          "min_quality_score": 0.6,
+          "check_completeness": true,
+          "min_sentence_length": 5,
+          "max_typo_ratio": 0.1,
+          "min_entropy": 3.0
+        },
+        "entity_preservation": {
+          "enabled": true,
+          "entity_types": [
+            "CVE",
+            "PROTOCOL",
+            "TOOL",
+            "VULNERABILITY",
+            "MALWARE",
+            "HASH"
+          ],
+          "ner_model": "en_core_web_sm",
+          "confidence_threshold": 0.7,
+          "custom_patterns": {}
+        },
+        "repetition_handling": {
+          "enabled": true,
+          "max_word_repetitions": 3,
+          "ngram_frequency_cap": 5,
+          "adaptive_penalty": true,
+          "similarity_threshold": 0.9,
+          "min_ngram_length": 3
+        }
+      },
+      "processing_order": [
+        "boilerplate_removal",
+        "language_filtering",
+        "domain_filtering",
+        "quality_assessment",
+        "entity_preservation",
+        "repetition_handling"
+      ],
+      "parallel_processing": false,
+      "max_workers": 4,
+      "batch_size": 100
+    }
   },
   "ingestion": {
     "max_file_size_mb": 100,
@@ -169,7 +270,11 @@
   "export": {
     "gguf": {
       "enabled": true,
-      "quantization_levels": ["f16", "q8_0", "q4_0"],
+      "quantization_levels": [
+        "f16",
+        "q8_0",
+        "q4_0"
+      ],
       "validate_output": true,
       "compression": true,
       "metadata": {
@@ -211,9 +316,9 @@
     "optimizer": "adamw",
     "beta1": 0.9,
     "beta2": 0.999,
-    "eps": 1e-8,
+    "eps": 1e-08,
     "scheduler": "cosine",
-    "min_lr": 1e-6,
+    "min_lr": 1e-06,
     "compile_model": false,
     "use_fused_adamw": false
   }

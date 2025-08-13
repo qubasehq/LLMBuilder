@@ -1,23 +1,23 @@
 # Data directories - exclude all data by default
-# data/raw/**/*
-# !data/raw/
-# !data/raw/.gitkeep
+data/raw/**/*
+!data/raw/
+!data/raw/.gitkeep
 
-# data/finetune/**/*
-# !data/finetune/
-# !data/finetune/.gitkeep
+data/finetune/**/*
+!data/finetune/
+!data/finetune/.gitkeep
 
-# Specific content folders to exclude
-# data/raw/*/content/
-# data/raw/*/content/**/*
-# data/raw/*/*/content/
-# data/raw/*/*/content/**/*
+Specific content folders to exclude
+data/raw/*/content/
+data/raw/*/content/**/*
+data/raw/*/*/content/
+data/raw/*/*/content/**/*
 
-# # Other data directories
-# data/processed/
-# data/cleaned/
-# data/tokens/
-# data/vocab/
+# Other data directories
+data/processed/
+data/cleaned/
+data/tokens/
+data/vocab/
 
 # Allow package files
 !llmbuilder/
@@ -26,7 +26,6 @@
 !llmbuilder/**/*.txt
 
 # Model checkpoints and outputs
-models/
 checkpoints/
 outputs/
 logs/

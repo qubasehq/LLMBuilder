@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 from loguru import logger
 
-from .export_gguf import GGUFConverter
-from .quantization_manager import QuantizationManager, create_quantization_config
+from export_gguf import GGUFConverter
+from quantization_manager import QuantizationManager, create_quantization_config
 
 
 @dataclass
@@ -165,7 +165,7 @@ class ConversionPipeline:
         for attempt in range(self.config.max_retries):
             try:
                 # Use the CLI export function
-                from .export_gguf import export_to_gguf_cli
+                from export_gguf import export_to_gguf_cli
                 
                 # Prepare metadata
                 metadata = {}

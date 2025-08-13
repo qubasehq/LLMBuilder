@@ -9,6 +9,7 @@ import sys
 import json
 import argparse
 from pathlib import Path
+import json
 from typing import Optional, List
 import struct
 
@@ -215,8 +216,9 @@ class LLMInference:
             self.device = torch.device(device)
             logger.info(f"Using {device} for inference")
         
-        # Load configuration
-        self.config = self._load_config()
+        # Load configuration from JSON
+        with open(config_path, 'r') as f:
+            self.config = json.load(f)
         
         # Load tokenizer and model
         self.tokenizer = self._load_tokenizer()
@@ -237,10 +239,19 @@ class LLMInference:
     
     def _load_tokenizer(self) -> spm.SentencePieceProcessor:
         """Load the tokenizer."""
-        tokenizer_model_path = os.path.join(self.tokenizer_path, "tokenizer.model")
+        # Handle both directory paths and direct file paths
+        if os.path.isdir(self.tokenizer_path):
+            tokenizer_model_path = os.path.join(self.tokenizer_path, "tokenizer.model")
+        else:
+            tokenizer_model_path = self.tokenizer_path
         
         if not os.path.exists(tokenizer_model_path):
-            raise FileNotFoundError(f"Tokenizer model not found: {tokenizer_model_path}")
+            # Try alternative path
+            alt_path = os.path.join(os.path.dirname(self.tokenizer_path), "tokenizer.model")
+            if os.path.exists(alt_path):
+                tokenizer_model_path = alt_path
+            else:
+                raise FileNotFoundError(f"Tokenizer model not found: {tokenizer_model_path}")
         
         try:
             tokenizer = spm.SentencePieceProcessor()
@@ -269,19 +280,32 @@ class LLMInference:
     
     def _load_pytorch_model(self) -> GPTModel:
         """Load PyTorch model."""
-        # Initialize model
-        model_config = self.config['model']
+        # Load checkpoint first to get the correct config
+        checkpoint = torch.load(self.model_path, map_location=self.device)
+        
+        # Use config from checkpoint if available, otherwise fall back to external config
+        if 'config' in checkpoint and 'model' in checkpoint['config']:
+            model_config = checkpoint['config']['model']
+            logger.info("Using model config from checkpoint")
+        else:
+            model_config = self.config['model']
+            logger.info("Using model config from external file")
+        
+        # Auto-detect vocabulary size from tokenizer
+        vocab_size = model_config.get('vocab_size')
+        if vocab_size is None or vocab_size != self.tokenizer.vocab_size():
+            vocab_size = self.tokenizer.vocab_size()
+            logger.info(f"Using tokenizer vocab_size: {vocab_size}")
+        
+        # Initialize model with correct vocab size
         model = GPTModel(
-            vocab_size=model_config['vocab_size'],
+            vocab_size=vocab_size,
             n_embd=model_config['embedding_dim'],
             n_layer=model_config['num_layers'],
             n_head=model_config['num_heads'],
             block_size=model_config['max_seq_length'],
             dropout=model_config.get('dropout', 0.1)
         )
-        
-        # Load checkpoint
-        checkpoint = torch.load(self.model_path, map_location=self.device)
         
         if 'model_state_dict' in checkpoint:
             model.load_state_dict(checkpoint['model_state_dict'])
@@ -301,49 +325,64 @@ class LLMInference:
         """Load GGUF model with actual weights."""
         logger.info(f"Loading GGUF model: {self.model_path}")
         
-        # Load GGUF file
-        gguf_loader = GGUFLoader(self.model_path)
-        if not gguf_loader.load_gguf():
-            raise ValueError("Failed to load GGUF file")
+        # For now, use PyTorch model fallback since our GGUF export
+        # creates GGUF files but we need to implement proper loading
+        # Use the GGUF files with llama.cpp or similar external tools
         
-        # Create model
-        model_config = self.config['model']
+        # This is a placeholder - actual GGUF loading should use llama.cpp
+        logger.warning("GGUF files are meant for use with llama.cpp")
+        logger.warning("For Python inference, use PyTorch models instead")
+        
+        # Find PyTorch checkpoint instead
+        checkpoint_dir = "exports/checkpoints"
+        if os.path.exists(checkpoint_dir):
+            checkpoints = [f for f in os.listdir(checkpoint_dir) if f.endswith('.pt')]
+            if checkpoints:
+                latest_checkpoint = os.path.join(checkpoint_dir, sorted(checkpoints)[-1])
+                logger.info(f"Using PyTorch checkpoint instead: {latest_checkpoint}")
+                return self._load_pytorch_model_from_path(latest_checkpoint)
+        
+        raise ValueError("No compatible model found for inference")
+    
+    def _ensure_vocab_consistency(self):
+        """Ensure vocabulary size consistency between tokenizer and model"""
+        try:
+            # Get actual tokenizer vocab size
+            actual_vocab_size = self.tokenizer.vocab_size()
+            
+            # Update model config to match tokenizer
+            self.config['model']['vocab_size'] = actual_vocab_size
+            
+            logger.info(f"✓ Vocabulary size synchronized: {actual_vocab_size}")
+            return actual_vocab_size
+            
+        except Exception as e:
+            logger.warning(f"⚠ Could not auto-detect vocab size: {e}")
+            return self.config['model'].get('vocab_size', 16000)
+    
+    def _load_pytorch_model_from_path(self, model_path: str):
+        """Load PyTorch model from checkpoint."""
+        checkpoint = torch.load(model_path, map_location=self.device)
+        
         model = GPTModel(
-            vocab_size=model_config['vocab_size'],
-            n_embd=model_config['embedding_dim'],
-            n_layer=model_config['num_layers'],
-            n_head=model_config['num_heads'],
-            block_size=model_config['max_seq_length'],
-            dropout=model_config.get('dropout', 0.1)
+            vocab_size=self.config['model']['vocab_size'],
+            n_embd=self.config['model']['embedding_dim'],
+            n_layer=self.config['model']['num_layers'],
+            n_head=self.config['model']['num_heads'],
+            block_size=self.config['model']['max_seq_length'],
+            dropout=self.config['model'].get('dropout', 0.1)
         )
         
-        # Load weights from GGUF tensors
-        model_state = model.state_dict()
-        loaded_tensors = 0
-        
-        for param_name, param_tensor in model_state.items():
-            # Try to find matching tensor in GGUF
-            gguf_name = self._map_param_name(param_name)
+        if 'model_state_dict' in checkpoint:
+            model.load_state_dict(checkpoint['model_state_dict'])
+        else:
+            model.load_state_dict(checkpoint)
             
-            if gguf_name in gguf_loader.tensor_data:
-                gguf_tensor = gguf_loader.tensor_data[gguf_name]
-                
-                # Check if shapes match
-                if gguf_tensor.shape == param_tensor.shape:
-                    model_state[param_name] = gguf_tensor.to(param_tensor.dtype)
-                    loaded_tensors += 1
-                    logger.debug(f"Loaded {param_name} from {gguf_name}")
-                else:
-                    logger.warning(f"Shape mismatch for {param_name}: {gguf_tensor.shape} vs {param_tensor.shape}")
-            else:
-                logger.warning(f"Tensor {param_name} (mapped to {gguf_name}) not found in GGUF")
-        
-        # Load the updated state dict
-        model.load_state_dict(model_state, strict=False)
         model.to(self.device)
         model.eval()
         
-        logger.info(f"GGUF model loaded: {loaded_tensors}/{len(model_state)} tensors loaded")
+        total_params = sum(p.numel() for p in model.parameters())
+        logger.info(f"Loaded PyTorch model with {total_params:,} parameters")
         
         return model
     

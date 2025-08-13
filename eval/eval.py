@@ -9,16 +9,21 @@ import time
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+import torch
+import json
+from typing import Dict, Any, List, Optional
 from loguru import logger
 
 # Add project root to path
+import sys
+from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from model.gpt_model import GPTModel
-from training.dataset import TextDataset, create_dataloader
+from training.dataset import TextDataset, MultiFileDataset, create_dataloader
+from training.utils import synchronize_vocab_size
 from training.utils import (
-    ConfigManager, DeviceManager, setup_logging, 
+    DeviceManager, setup_logging, 
     count_parameters, format_time
 )
 
@@ -55,7 +60,9 @@ class ModelEvaluator:
         
         # Load configuration
         if config_path:
-            self.config = ConfigManager.load_config(config_path)
+            import json
+            with open(config_path, 'r', encoding='utf-8') as f:
+                self.config = json.load(f)
         else:
             self.config = None
         
@@ -72,28 +79,42 @@ class ModelEvaluator:
         logger.info("Model evaluator initialized")
     
     def load_model(self) -> GPTModel:
-        """Load trained model from checkpoint."""
-        logger.info(f"Loading model from {self.model_path}")
-        
+        """Load model from checkpoint with dynamic vocabulary handling."""
         try:
+            logger.info(f"Loading model from {self.model_path}")
+            
             # Load checkpoint
             checkpoint = torch.load(self.model_path, map_location='cpu')
             
-            # Get model configuration
-            if 'config' in checkpoint:
+            # Extract model configuration from checkpoint if available
+            if 'config' in checkpoint and checkpoint['config']:
                 model_config = checkpoint['config']['model']
             elif self.config:
-                model_config = self.config['model']
+                if 'model' in self.config:
+                    model_config = self.config['model']
+                else:
+                    # Handle case where config is flat structure
+                    model_config = self.config
             else:
+                logger.error("No model configuration found")
                 raise ValueError("No model configuration found")
             
-            # Create model
+            # Use centralized vocabulary consistency utility
+            vocab_size = synchronize_vocab_size(
+                {'model': model_config}, 
+                self.model_path
+            )
+            
+            # Override model config with synchronized vocab size
+            model_config = dict(model_config)
+            model_config['vocab_size'] = vocab_size
+                
             model = GPTModel(
-                vocab_size=model_config['vocab_size'],
-                n_layer=model_config['n_layer'],
-                n_head=model_config['n_head'],
-                n_embd=model_config['n_embd'],
-                block_size=model_config['block_size'],
+                vocab_size=vocab_size,
+                n_layer=model_config.get('n_layer', model_config.get('num_layers', 6)),
+                n_head=model_config.get('n_head', model_config.get('num_heads', 6)),
+                n_embd=model_config.get('n_embd', model_config.get('embedding_dim', 512)),
+                block_size=model_config.get('block_size', model_config.get('max_seq_length', 256)),
                 dropout=0.0  # No dropout during evaluation
             )
             
@@ -631,7 +652,7 @@ def main():
         evaluator = ModelEvaluator(
             model_path=model_path,
             tokenizer_path=tokenizer_path,
-            config_path="training/config.yaml"
+            config_path="config.json"
         )
         
         # Test prompts
