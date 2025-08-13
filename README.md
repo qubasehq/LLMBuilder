@@ -1,10 +1,11 @@
 # LLMBuilder
 
-Created By Qubase
+Created by [Qub△se](https://github.com/Qubasehq)
 
-A comprehensive, production-ready implementation for training and fine-tuning Large Language Models from scratch. This project provides an advanced pipeline with enhanced document ingestion, intelligent deduplication, model training, automated GGUF conversion, and comprehensive testing - all optimized for both CPU and GPU environments.
+A comprehensive, production-ready implementation for training and fine-tuning Large Language Models from scratch. This project provides an advanced pipeline with enhanced document ingestion, intelligent deduplication, model training, automated GGUF conversion, and comprehensive testing — all optimized for both CPU and GPU environments.
 
 ## Table of Contents
+
 
 - [Key Features](#key-features)
 - [System Requirements](#system-requirements)
