@@ -88,9 +88,19 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest tests/ -v --tb=short --timeout=300 -x
+        # Temporarily ignore SWIG deprecation warnings
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          set PYTHONPATH=%PYTHONPATH%;%GITHUB_WORKSPACE%;%GITHUB_WORKSPACE%\tools;%GITHUB_WORKSPACE%\export_gguf
+          python -W "ignore::DeprecationWarning:pytesseract" -m pytest tests/ -v --tb=short --timeout=300 -x -rA --show-capture=all
+        else
+          PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/tools:$GITHUB_WORKSPACE/export_gguf \
+          python -W "ignore::DeprecationWarning:pytesseract" -m pytest tests/ -v --tb=short --timeout=300 -x -rA --show-capture=all
+        fi
       env:
+        # Base PYTHONPATH
         PYTHONPATH: ${{ github.workspace }}
+        # Add Tesseract path for Windows
+        Path: ${{ runner.os == 'Windows' && 'C:\\Program Files\\Tesseract-OCR;' || '' }}${{ env.Path }}
 
     - name: Run integration tests (fast)
       run: |
