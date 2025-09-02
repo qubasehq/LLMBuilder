@@ -321,5 +321,33 @@
     "min_lr": 1e-06,
     "compile_model": false,
     "use_fused_adamw": false
+  },
+  "peft": {
+    "enabled": false,
+    "method": "lora",
+    "lora": {
+      "r": 16,
+      "alpha": 32,
+      "dropout": 0.1,
+      "target_modules": [
+        "qkv_proj",
+        "out_proj",
+        "fc1",
+        "fc2"
+      ],
+      "bias": "none",
+      "task_type": "CAUSAL_LM"
+    },
+    "qlora": {
+      "load_in_4bit": true,
+      "bnb_4bit_quant_type": "nf4",
+      "bnb_4bit_use_double_quant": true,
+      "bnb_4bit_compute_dtype": "float16"
+    },
+    "adapter": {
+      "save_directory": "exports/adapters",
+      "merge_and_unload": false,
+      "auto_save_interval": 500
+    }
   }
 }

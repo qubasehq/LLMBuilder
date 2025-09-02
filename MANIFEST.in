@@ -1,0 +1,65 @@
+# LLMBuilder Package Manifest
+
+# Include documentation
+include README.md
+include INSTALLATION.md
+include CHANGELOG.md
+include LICENSE
+include CONTRIBUTING.md
+include USAGE.md
+
+# Include configuration files
+include pyproject.toml
+include pytest.ini
+include MANIFEST.in
+
+# Include templates and configs
+recursive-include llmbuilder/templates *
+recursive-include llmbuilder/configs *
+
+# Include type information
+include llmbuilder/py.typed
+
+# Exclude development and build files
+exclude .gitignore
+exclude .pre-commit-config.yaml
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.so
+recursive-exclude * .DS_Store
+
+# Exclude test files from distribution
+recursive-exclude tests *
+exclude run_tests.py
+
+# Exclude development scripts
+recursive-exclude scripts *
+recursive-exclude debug_scripts *
+
+# Exclude build artifacts
+recursive-exclude build *
+recursive-exclude dist *
+recursive-exclude *.egg-info *
+
+# Exclude IDE files
+recursive-exclude .vscode *
+recursive-exclude .idea *
+recursive-exclude *.swp
+recursive-exclude *.swo
+
+# Exclude logs and temporary files
+recursive-exclude logs *
+recursive-exclude *.log
+recursive-exclude *.tmp
+recursive-exclude *.temp
+
+# Exclude build info files
+exclude build_info.json
+recursive-exclude * build_info.json
+
+# Exclude model files and data
+recursive-exclude test_models *
+recursive-exclude data *
+exclude *.bin
+exclude *.safetensors
+exclude *.gguf

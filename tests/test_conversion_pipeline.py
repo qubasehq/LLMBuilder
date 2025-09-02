@@ -18,7 +18,7 @@ from loguru import logger
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from tools.conversion_pipeline import (
+from llmbuilder.core.tools.conversion_pipeline import (
     ConversionPipeline, ConversionConfig, ConversionResult, PipelineResult,
     create_conversion_pipeline
 )

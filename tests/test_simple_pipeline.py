@@ -9,7 +9,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from data.dedup import DeduplicationPipeline
+from llmbuilder.core.data.dedup import DeduplicationPipeline
 from loguru import logger
 
 def main():

@@ -22,8 +22,8 @@ class TestBasicFunctionality:
         
         # Test project imports
         try:
-            from data.ingest import DocumentIngester
-            from data.dedup import DeduplicationPipeline
+            from llmbuilder.core.data.ingest import DocumentIngester
+            from llmbuilder.core.data.dedup import DeduplicationPipeline
         except ImportError as e:
             pytest.skip(f"Project modules not available: {e}")
     

@@ -9,7 +9,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from data.ingest import HTMLExtractor
+from llmbuilder.core.data.ingest import HTMLExtractor
 from loguru import logger
 
 

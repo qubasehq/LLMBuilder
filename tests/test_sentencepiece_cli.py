@@ -10,7 +10,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from training.train_tokenizer import SentencePieceTokenizerTrainer, TokenizerConfig, SENTENCEPIECE_AVAILABLE
+from llmbuilder.core.training.train_tokenizer import SentencePieceTokenizerTrainer, TokenizerConfig, SENTENCEPIECE_AVAILABLE
 from loguru import logger
 
 

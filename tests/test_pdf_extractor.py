@@ -10,7 +10,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from data.ingest import EnhancedPDFExtractor, DocumentIngester
+from llmbuilder.core.data.ingest import EnhancedPDFExtractor, DocumentIngester
 from loguru import logger
 
 

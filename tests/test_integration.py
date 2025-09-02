@@ -18,11 +18,11 @@ from unittest.mock import patch, MagicMock
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from data.ingest import DocumentIngester
-from data.dedup import DeduplicationPipeline
-from training.train_tokenizer import TokenizerTrainer
-from tools.conversion_pipeline import ConversionPipeline, ConversionConfig
-from tools.quantization_manager import QuantizationManager, create_quantization_config
+from llmbuilder.core.data.ingest import DocumentIngester
+from llmbuilder.core.data.dedup import DeduplicationPipeline
+from llmbuilder.core.training.train_tokenizer import TokenizerTrainer
+from llmbuilder.core.tools.conversion_pipeline import ConversionPipeline, ConversionConfig
+from llmbuilder.core.tools.quantization_manager import QuantizationManager, create_quantization_config
 
 
 class TestDataFixtures:

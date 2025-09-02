@@ -13,7 +13,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from tools.export_gguf import GGUFConverter, ModelMetadata, GGUFTensorInfo, GGUFValidationResult
+from llmbuilder.core.tools.export_gguf import GGUFConverter, ModelMetadata, GGUFTensorInfo, GGUFValidationResult
 from loguru import logger
 
 

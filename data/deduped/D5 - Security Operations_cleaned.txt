@@ -1,0 +1,1 @@
+Security Operations 5.1 Understand Data Security 5.2 Understand System Hardening 5.3 Understand Best Practice Security Policies 5.4 Understand Security Awareness Training

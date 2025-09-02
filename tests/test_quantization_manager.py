@@ -12,7 +12,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from tools.quantization_manager import (
+from llmbuilder.core.tools.quantization_manager import (
     QuantizationManager, QuantizationConfig, QuantizationType, 
     QuantizationResult, create_quantization_config
 )

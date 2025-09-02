@@ -8,7 +8,7 @@ existing configuration and preprocessing pipeline.
 import pytest
 import json
 from pathlib import Path
-from training.advanced_cleaning import AdvancedTextCleaner, ConfigManager
+from llmbuilder.core.training.advanced_cleaning import AdvancedTextCleaner, ConfigManager
 
 
 class TestAdvancedCleaningIntegration:

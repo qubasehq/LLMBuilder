@@ -11,7 +11,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from training.train_tokenizer import TokenizerConfig, TokenizerTrainer
+from llmbuilder.core.training.train_tokenizer import TokenizerConfig, TokenizerTrainer
 from loguru import logger
 
 

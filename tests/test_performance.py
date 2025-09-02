@@ -20,9 +20,9 @@ from unittest.mock import patch
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from data.ingest import DocumentIngester
-from data.dedup import DeduplicationPipeline, HashDeduplicator, EmbeddingDeduplicator
-from tools.quantization_manager import QuantizationManager, create_quantization_config
+from llmbuilder.core.data.ingest import DocumentIngester
+from llmbuilder.core.data.dedup import DeduplicationPipeline, HashDeduplicator, EmbeddingDeduplicator
+from llmbuilder.core.tools.quantization_manager import QuantizationManager, create_quantization_config
 
 
 class PerformanceMonitor:

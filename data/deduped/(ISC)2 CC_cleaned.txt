@@ -1,0 +1,1 @@
+Domains Covered D1 - Security Principles D2 - Incident Response, Business Continuity and Disaster Recovery Concepts D3 - Access Control Concepts D4 - Network Security D5 - Security Operations

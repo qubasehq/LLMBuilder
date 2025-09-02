@@ -216,12 +216,37 @@ class LLMInference:
             self.device = torch.device(device)
             logger.info(f"Using {device} for inference")
         
+        # Initialize vocab sync manager (lazy import to avoid circular imports)
+        try:
+            from llmbuilder.utils.vocab_sync import VocabSyncManager
+            self.vocab_sync = VocabSyncManager(config_path)
+        except ImportError:
+            logger.warning("VocabSyncManager not available, using basic vocab handling")
+            self.vocab_sync = None
+        
         # Load configuration from JSON
         with open(config_path, 'r') as f:
             self.config = json.load(f)
         
-        # Load tokenizer and model
+        # Load tokenizer first to get actual vocab size
         self.tokenizer = self._load_tokenizer()
+        
+        # Auto-sync vocab sizes across all components
+        if self.vocab_sync:
+            logger.info("🔧 Auto-syncing vocabulary sizes...")
+            self.vocab_sync.auto_sync_vocab_sizes(
+                tokenizer_path=self.tokenizer_path,
+                config_path=config_path,
+                checkpoint_path=self.model_path if not self.is_gguf else None
+            )
+            
+            # Reload config after sync
+            with open(config_path, 'r') as f:
+                self.config = json.load(f)
+        else:
+            logger.info("Using basic vocab size handling")
+        
+        # Load model
         self.model = self._load_model()
         
         logger.success("Inference engine initialized successfully")
@@ -285,17 +310,46 @@ class LLMInference:
         
         # Use config from checkpoint if available, otherwise fall back to external config
         if 'config' in checkpoint and 'model' in checkpoint['config']:
-            model_config = checkpoint['config']['model']
+            model_config = checkpoint['config']['model'].copy()
             logger.info("Using model config from checkpoint")
         else:
-            model_config = self.config['model']
+            model_config = self.config['model'].copy()
             logger.info("Using model config from external file")
         
-        # Auto-detect vocabulary size from tokenizer
-        vocab_size = model_config.get('vocab_size')
-        if vocab_size is None or vocab_size != self.tokenizer.vocab_size():
-            vocab_size = self.tokenizer.vocab_size()
-            logger.info(f"Using tokenizer vocab_size: {vocab_size}")
+        # AUTO-DETECT vocabulary size from the actual model weights
+        model_state_dict = checkpoint.get('model_state_dict', checkpoint)
+        
+        # Find embedding layer to get actual vocab size from checkpoint
+        checkpoint_vocab_size = None
+        for key in model_state_dict.keys():
+            if 'token_embedding.weight' in key:
+                checkpoint_vocab_size = model_state_dict[key].shape[0]
+                break
+            elif 'embeddings.word_embeddings.weight' in key:
+                checkpoint_vocab_size = model_state_dict[key].shape[0]
+                break
+        
+        # Get tokenizer vocab size
+        tokenizer_vocab_size = self.tokenizer.vocab_size()
+        
+        # Determine which vocab size to use
+        if checkpoint_vocab_size is not None:
+            logger.info(f"Checkpoint vocab size: {checkpoint_vocab_size}")
+            logger.info(f"Tokenizer vocab size: {tokenizer_vocab_size}")
+            
+            if checkpoint_vocab_size != tokenizer_vocab_size:
+                logger.warning(f"Vocab size mismatch! Checkpoint: {checkpoint_vocab_size}, Tokenizer: {tokenizer_vocab_size}")
+                logger.info("Using checkpoint vocab size for model initialization")
+                vocab_size = checkpoint_vocab_size
+            else:
+                logger.info("✓ Vocab sizes match perfectly")
+                vocab_size = checkpoint_vocab_size
+        else:
+            logger.warning("Could not detect vocab size from checkpoint, using tokenizer")
+            vocab_size = tokenizer_vocab_size
+        
+        # Update model config with detected vocab size
+        model_config['vocab_size'] = vocab_size
         
         # Initialize model with correct vocab size
         model = GPTModel(
@@ -307,17 +361,56 @@ class LLMInference:
             dropout=model_config.get('dropout', 0.1)
         )
         
-        if 'model_state_dict' in checkpoint:
-            model.load_state_dict(checkpoint['model_state_dict'])
-        else:
-            model.load_state_dict(checkpoint)
+        # Load state dict with error handling for vocab mismatch
+        try:
+            if 'model_state_dict' in checkpoint:
+                model.load_state_dict(checkpoint['model_state_dict'])
+            else:
+                model.load_state_dict(checkpoint)
+            logger.info("✓ Model weights loaded successfully")
+        except RuntimeError as e:
+            if "size mismatch" in str(e) and "token_embedding" in str(e):
+                logger.error(f"Vocab size mismatch detected: {e}")
+                logger.info("Attempting to resize embeddings...")
+                
+                # Try to resize embeddings
+                if self.vocab_sync:
+                    logger.info("Attempting to resize embeddings using VocabSyncManager...")
+                    temp_checkpoint_path = self.model_path.replace('.pt', '_temp_resized.pt')
+                    success = self.vocab_sync.resize_checkpoint_embeddings(
+                        self.model_path, tokenizer_vocab_size, temp_checkpoint_path
+                    )
+                    
+                    if success:
+                        # Load the resized checkpoint
+                        resized_checkpoint = torch.load(temp_checkpoint_path, map_location=self.device)
+                        if 'model_state_dict' in resized_checkpoint:
+                            model.load_state_dict(resized_checkpoint['model_state_dict'])
+                        else:
+                            model.load_state_dict(resized_checkpoint)
+                        
+                        # Clean up temp file
+                        try:
+                            os.remove(temp_checkpoint_path)
+                        except:
+                            pass
+                        
+                        logger.info("✅ Successfully resized and loaded embeddings")
+                    else:
+                        raise RuntimeError(f"Failed to resolve vocab size mismatch: {e}")
+                else:
+                    logger.error("VocabSyncManager not available for embedding resize")
+                    raise RuntimeError(f"Failed to resolve vocab size mismatch: {e}")
+            else:
+                raise e
         
         model.to(self.device)
         model.eval()
         
         # Count parameters
         total_params = sum(p.numel() for p in model.parameters())
-        logger.info(f"Loaded PyTorch model with {total_params:,} parameters")
+        logger.info(f"GPT model initialized with {total_params:,} parameters")
+        logger.info(f"Architecture: {model_config['num_layers']} layers, {model_config['num_heads']} heads, {model_config['embedding_dim']} embedding dim")
         
         return model
     
@@ -503,10 +596,26 @@ class LLMInference:
                 if next_token_id == self.tokenizer.eos_id():
                     break
                 
+                # Handle vocab size mismatch - skip tokens outside tokenizer range
+                if next_token_id >= self.tokenizer.vocab_size():
+                    logger.debug(f"Skipping token {next_token_id} (outside tokenizer vocab size {self.tokenizer.vocab_size()})")
+                    continue
+                
                 generated_ids.append(next_token_id)
         
-        # Decode generated text
-        generated_text = self.tokenizer.decode(generated_ids)
+        # Decode generated text with error handling
+        try:
+            generated_text = self.tokenizer.decode(generated_ids)
+        except Exception as e:
+            logger.warning(f"Tokenizer decode error: {e}")
+            # Try to decode only valid tokens
+            valid_ids = [id for id in generated_ids if id < self.tokenizer.vocab_size()]
+            try:
+                generated_text = self.tokenizer.decode(valid_ids)
+                logger.info(f"Decoded with {len(generated_ids) - len(valid_ids)} invalid tokens skipped")
+            except Exception as e2:
+                logger.error(f"Failed to decode even valid tokens: {e2}")
+                generated_text = f"[Decode Error: {str(e2)}]"
         
         logger.info(f"Generated {len(generated_ids) - len(input_ids)} new tokens")
         

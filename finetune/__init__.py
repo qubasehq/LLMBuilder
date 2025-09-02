@@ -1,10 +1,13 @@
-"""
-Finetuning module for LLMBuilder.
+# Compatibility layer for finetune modules
+# This maintains backward compatibility for existing imports
 
-This module provides functionality for fine-tuning pre-trained language models
-on custom datasets with optimized settings for different hardware configurations.
-"""
+import warnings
+from llmbuilder.core.finetune import *
 
-from .finetune import FineTuner, main
-
-__all__ = ['FineTuner', 'main']
+# Issue deprecation warning
+warnings.warn(
+    "Importing from 'finetune' module is deprecated. "
+    "Please use 'from llmbuilder.core.finetune import ...' instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
