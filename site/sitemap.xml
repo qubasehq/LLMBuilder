@@ -1,119 +1,119 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/api/core/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/api/core/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/api/data-processing/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/api/data-processing/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/cli/overview/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/cli/overview/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/contributing/testing-guidelines/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/contributing/testing-guidelines/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/development/code-style/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/development/code-style/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/development/setup/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/development/setup/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/development/testing/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/development/testing/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/examples/advanced-data-processing/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/examples/advanced-data-processing/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/examples/advanced-deduplication/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/examples/advanced-deduplication/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/examples/basic-training/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/examples/basic-training/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/examples/multi-format-ingestion/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/examples/multi-format-ingestion/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/examples/model-cards/code-generation-model/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/examples/model-cards/code-generation-model/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/examples/model-cards/text-generation-model/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/examples/model-cards/text-generation-model/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/getting-started/CLI/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/getting-started/CLI/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/getting-started/first-model/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/getting-started/first-model/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/getting-started/installation/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/getting-started/installation/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/getting-started/quickstart/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/getting-started/quickstart/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/reference/faq/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/reference/faq/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/reference/migration/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/reference/migration/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/reference/model-card-template/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/reference/model-card-template/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/user-guide/advanced-data-processing/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/user-guide/advanced-data-processing/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/user-guide/configuration/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/user-guide/configuration/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/user-guide/data-processing/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/user-guide/data-processing/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/user-guide/export/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/user-guide/export/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/user-guide/fine-tuning/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/user-guide/fine-tuning/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/user-guide/generation/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/user-guide/generation/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/user-guide/tokenization/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/user-guide/tokenization/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
     <url>
-         <loc>https://qubasehq.github.io/llmbuilder-package/user-guide/training/</loc>
+         <loc>https://qubasehq.github.io/llmbuilder/user-guide/training/</loc>
          <lastmod>2025-08-14</lastmod>
     </url>
 </urlset>

@@ -20,8 +20,8 @@ We welcome contributions in all areas, from bug fixes to new features, documenta
 
 ```bash
 # Clone the repository
-git clone https://github.com/Qubasehq/llmbuilder-package.git
-cd llmbuilder-package
+git clone https://github.com/Qubasehq/llmbuilder.git
+cd llmbuilder
 
 # Create a virtual environment
 python -m venv venv

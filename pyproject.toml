@@ -142,11 +142,11 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Qubasehq/llmbuilder-package"
-Documentation = "https://qubasehq.github.io/llmbuilder-package/"
-Repository = "https://github.com/Qubasehq/llmbuilder-package.git"
-Issues = "https://github.com/Qubasehq/llmbuilder-package/issues"
-Changelog = "https://github.com/Qubasehq/llmbuilder-package/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Qubasehq/llmbuilder"
+Documentation = "https://qubasehq.github.io/llmbuilder/"
+Repository = "https://github.com/Qubasehq/llmbuilder.git"
+Issues = "https://github.com/Qubasehq/llmbuilder/issues"
+Changelog = "https://github.com/Qubasehq/llmbuilder/blob/main/CHANGELOG.md"
 
 [project.scripts]
 llmbuilder = "llmbuilder.cli:main"

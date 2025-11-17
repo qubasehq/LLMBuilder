@@ -1,6 +1,6 @@
-# LLMBuilder - Professional Language Model Toolkit
+# LLMBuilder - Professional LLM Toolkit
 
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://qubasehq.github.io/llmbuilder-package/)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://qubasehq.github.io/llmbuilder/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -9,6 +9,42 @@ A comprehensive toolkit for building, training, fine-tuning, and deploying GPT-s
 ## About LLMBuilder
 
 LLMBuilder is a production-ready framework for training and fine-tuning Large Language Models (LLMs). Designed for developers, researchers, and AI engineers, LLMBuilder provides a full pipeline to go from raw text data to deployable, optimized LLMs, all running locally on CPUs or GPUs.
+
+## Core Features
+
+### Advanced Data Processing
+
+- Multi-Format Ingestion: Process HTML, Markdown, EPUB, PDF, and text files with intelligent extraction
+- OCR Integration: Automatic OCR fallback for scanned PDFs using Tesseract
+- Smart Deduplication: Both exact and semantic duplicate detection with configurable similarity thresholds
+- Batch Processing: Parallel processing with configurable worker threads and batch sizes
+
+### Flexible Tokenization
+
+- Multiple Algorithms: BPE, SentencePiece, Unigram, and WordPiece tokenizers
+- Custom Training: Train tokenizers on your specific datasets with advanced configuration options
+- Validation Tools: Built-in tokenizer testing and benchmarking utilities
+
+### Model Conversion & Optimization
+
+- GGUF Pipeline: Convert trained models to GGUF format for llama.cpp compatibility
+- Quantization Options: Support for F32, F16, Q8_0, Q5_1, Q5_0, Q4_1, Q4_0 quantization levels
+- Batch Conversion: Convert multiple models with different quantization levels simultaneously
+- Validation: Automatic output validation and integrity checking
+
+### Configuration Management
+
+- Template System: Pre-configured templates for different use cases (CPU, GPU, inference, etc.)
+- Validation: Comprehensive configuration validation with detailed error reporting
+- Override Support: Easy configuration customization with dot-notation overrides
+- CLI Integration: Full command-line configuration management tools
+
+### Production-Ready CLI
+
+- Complete Interface: Full command-line interface for all operations
+- Interactive Modes: Guided setup and configuration for new users
+- Progress Tracking: Real-time progress reporting with detailed logging
+- Batch Operations: Support for processing multiple files and models
 
 ## Quick Start
 
@@ -37,32 +73,9 @@ This creates a structured project with the following directories:
 - `configs` - Configuration files
 - `outputs` - Output files
 
-And generates a README.md with quick start instructions:
-```
-# my_llm_project
-
-This is an LLM project created with LLMBuilder.
-
-## Project Structure
-
-- `data/` - Data files
-- `tokenizer/` - Tokenizer files
-- `models/` - Model checkpoints and final models
-- `configs/` - Configuration files
-- `outputs/` - Output files
-
-## Quick Start
-
-1. Prepare your data in `data/raw/`
-2. Process data: `llmbuilder data load -i data/raw -o data/processed/input.txt`
-3. Train tokenizer: `llmbuilder tokenizer train -i data/processed/input.txt -o tokenizer/`
-4. Train model: `llmbuilder train model -d data/processed/input.txt -t tokenizer/ -o models/checkpoints/`
-5. Generate text: `llmbuilder generate text -m models/checkpoints/latest.pt -t tokenizer/ -p "Your prompt here"`
-```
-
 ## Documentation
 
-Complete documentation is available at: [https://qubasehq.github.io/llmbuilder-package/](https://qubasehq.github.io/llmbuilder-package/)
+Complete documentation is available at: [https://qubasehq.github.io/llmbuilder/](https://qubasehq.github.io/llmbuilder/)
 
 The documentation includes:
 
@@ -317,7 +330,7 @@ llmbuilder config validate working_config.json
 
 ## Documentation
 
-Complete documentation is available at: https://qubasehq.github.io/llmbuilder-package/
+Complete documentation is available at: https://qubasehq.github.io/llmbuilder/
 
 ## License
 

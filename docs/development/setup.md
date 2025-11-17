@@ -8,8 +8,8 @@ The fastest way to get started is using our automated setup script:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Qubasehq/llmbuilder-package.git
-cd llmbuilder-package
+git clone https://github.com/Qubasehq/llmbuilder.git
+cd llmbuilder
 
 # Run the automated setup script
 python scripts/setup_dev.py --full
@@ -56,8 +56,8 @@ If you prefer to set up manually or need more control:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Qubasehq/llmbuilder-package.git
-cd llmbuilder-package
+git clone https://github.com/Qubasehq/llmbuilder.git
+cd llmbuilder
 
 # Create and activate virtual environment
 python -m venv venv

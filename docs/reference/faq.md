@@ -390,4 +390,4 @@ llmbuilder export quantize model.pt --output model_int8.pt --bits 8
 ---
 
 !!! tip "Still have questions?"
-    If you can't find the answer here, check our [GitHub Discussions](https://github.com/Qubasehq/llmbuilder-package/discussions) or create a new issue. The community is always happy to help!
+    If you can't find the answer here, check our [GitHub Discussions](https://github.com/Qubasehq/llmbuilder/discussions) or create a new issue. The community is always happy to help!

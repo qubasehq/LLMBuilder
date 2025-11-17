@@ -310,8 +310,8 @@ def info():
         + click.style("Need help?", fg="green", bold=True)
         + " Use --help with any command for detailed information."
     )
-    click.echo("📚 Documentation: https://github.com/Qubasehq/llmbuilder-package/wiki")
-    click.echo("🐛 Report issues: https://github.com/Qubasehq/llmbuilder-package/issues")
+    click.echo("📚 Documentation: https://github.com/Qubasehq/llmbuilder/wiki")
+    click.echo("🐛 Report issues: https://github.com/Qubasehq/llmbuilder/issues")
 
 
 # Duplicate info command removed - keeping the more detailed version above
@@ -1098,7 +1098,7 @@ def text(
         click.echo("   • Ensure your model and tokenizer are compatible")
         click.echo("   • Try reducing max_tokens if you're running out of memory")
         click.echo(
-            "   • Visit https://github.com/Qubasehq/llmbuilder-package/wiki for help"
+            "   • Visit https://github.com/Qubasehq/llmbuilder/wiki for help"
         )
 
 

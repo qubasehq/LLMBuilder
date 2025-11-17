@@ -1,10 +1,10 @@
 site_name: LLMBuilder Documentation
 site_description: A comprehensive toolkit for building, training, and deploying language models
 site_author: Qub△se
-site_url: https://qubasehq.github.io/llmbuilder-package/
+site_url: https://qubasehq.github.io/llmbuilder/
 
-repo_name: Qubasehq/llmbuilder-package
-repo_url: https://github.com/Qubasehq/llmbuilder-package
+repo_name: Qubasehq/llmbuilder
+repo_url: https://github.com/Qubasehq/llmbuilder
 edit_uri: edit/main/docs/
 
 theme:
@@ -111,7 +111,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Qubasehq/llmbuilder-package
+      link: https://github.com/Qubasehq/llmbuilder
     - icon: fontawesome/solid/globe
       link: https://qubase.in
   version:
