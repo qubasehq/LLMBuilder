@@ -10,7 +10,7 @@ This package provides a modular approach to language model development with supp
 - Model export in various formats
 """
 
-__version__ = "0.4.6"
+__version__ = "2.0.0"
 __author__ = "Qub△se"
 __email__ = "contact@qubase.in"
 
@@ -102,7 +102,7 @@ def train(
     output_dir: Union[str, Path],
     config: Optional[Dict[str, Any]] = None,
     clean: bool = False,
-) -> "TrainingPipeline":
+) -> Any:
     """
     High-level training function that handles the complete training pipeline.
 

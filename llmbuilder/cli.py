@@ -51,7 +51,7 @@ def welcome():
         ("1", "📖 Learn about LLMBuilder", "info"),
         ("2", "⚙️  Create a configuration file", "config create --interactive"),
         ("3", "📁 Load and preprocess data", "data load --interactive"),
-        ("4", "🔤 Train a tokenizer", "data tokenizer --interactive"),
+        ("4", " англи Train a tokenizer", "data tokenizer --interactive"),
         ("5", "🧠 Train a new model", "train model --interactive"),
         ("6", "🎯 Generate text with a model", "generate text --setup"),
         ("7", "📚 View all available commands", "--help"),
@@ -68,10 +68,9 @@ def welcome():
     _, _, command = options[int(choice) - 1]
 
     if command == "info":
+        # Call the info command directly instead of invoking context
         from .cli import info
-
-        ctx = click.get_current_context()
-        ctx.invoke(info)
+        info()
     elif command == "--help":
         ctx = click.get_current_context()
         click.echo(ctx.get_help())
@@ -81,6 +80,181 @@ def welcome():
         click.echo()
         # Note: In a real implementation, you'd invoke the actual command
         click.echo(f"Command to run: llmbuilder {command}")
+
+
+@main.command()
+@click.argument('project_name')
+@click.option('--template', '-t', default='basic', help='Project template to use (basic, advanced, cpu_optimized)')
+def init(project_name, template):
+    """🚀 Initialize a new LLMBuilder project with the given name."""
+    import json
+    import os
+    from pathlib import Path
+    
+    # Create project directory
+    project_path = Path(project_name)
+    project_path.mkdir(exist_ok=True)
+    
+    click.echo(f"🚀 Creating new LLMBuilder project: {click.style(project_name, fg='blue', bold=True)}")
+    
+    # Create basic project structure
+    directories = [
+        "data/raw",
+        "data/processed",
+        "tokenizer",
+        "models/checkpoints",
+        "models/final",
+        "configs",
+        "outputs"
+    ]
+    
+    for directory in directories:
+        (project_path / directory).mkdir(parents=True, exist_ok=True)
+    
+    # Create a basic README with step-by-step instructions
+    readme_content = f"""# {project_name}
+
+This is an LLM project created with LLMBuilder.
+
+## Project Structure
+
+- `data/` - Data files
+- `tokenizer/` - Tokenizer files
+- `models/` - Model checkpoints and final models
+- `configs/` - Configuration files
+- `outputs/` - Output files
+
+## Step-by-Step Workflow
+
+### 1. Prepare Your Data
+Place your text data files in the `data/raw/` directory. Supported formats include:
+- Plain text files (.txt)
+- PDF documents (.pdf)
+- Word documents (.docx)
+- Markdown files (.md)
+
+### 2. Process Your Data
+Clean and prepare your data for training:
+
+```bash
+llmbuilder data load -i data/raw -o data/processed/input.txt --clean
+```
+
+### 3. Remove Duplicates (Optional)
+Remove duplicate content to improve training quality:
+
+```bash
+llmbuilder data deduplicate -i data/processed/input.txt -o data/processed/clean.txt --method both
+```
+
+### 4. Train a Tokenizer
+Create a custom tokenizer for your data:
+
+```bash
+llmbuilder tokenizer train -i data/processed/clean.txt -o tokenizer/ --vocab-size 16000
+```
+
+### 5. Train Your Model
+Train a language model using your processed data:
+
+```bash
+llmbuilder train model -d data/processed/clean.txt -t tokenizer/ -o models/checkpoints
+```
+
+### 6. Generate Text
+Generate text using your trained model:
+
+```bash
+llmbuilder generate text -m models/checkpoints/latest.pt -t tokenizer/ -p "Your prompt here"
+```
+
+### 7. Export for Deployment (Optional)
+Convert your model to GGUF format for deployment:
+
+```bash
+llmbuilder export gguf models/checkpoints/latest.pt -o models/final/model.gguf -q Q8_0
+```
+
+## Configuration
+A basic configuration file has been created at `configs/config.json`. You can modify this file to adjust:
+- Model architecture parameters
+- Training hyperparameters
+- Data processing settings
+
+## Next Steps
+1. Add your data to `data/raw/`
+2. Follow the steps above in order
+3. Experiment with different configurations
+4. Fine-tune your model for specific tasks
+
+For more detailed help with any command, use:
+```bash
+llmbuilder COMMAND --help
+```
+"""
+    
+    with open(project_path / "README.md", "w") as f:
+        f.write(readme_content)
+    
+    # Copy the template config file
+    template_path = Path(__file__).parent / "config" / "templates" / f"{template}_config.json"
+    config_path = project_path / "configs" / "config.json"
+    
+    if template_path.exists():
+        import shutil
+        shutil.copy(template_path, config_path)
+        # Update the project name in the config
+        with open(config_path, "r") as f:
+            config_data = json.load(f)
+        
+        if "project" not in config_data:
+            config_data["project"] = {}
+        config_data["project"]["name"] = project_name
+        config_data["project"]["version"] = "0.1.0"
+        
+        with open(config_path, "w") as f:
+            json.dump(config_data, f, indent=2)
+    else:
+        # Fallback to basic config if template not found
+        config_content = f"""{{
+  "project": {{
+    "name": "{project_name}",
+    "version": "0.1.0"
+  }},
+  "model": {{
+    "vocab_size": 16000,
+    "embedding_dim": 384,
+    "num_layers": 6,
+    "num_heads": 6,
+    "max_seq_length": 512,
+    "dropout": 0.1
+  }},
+  "training": {{
+    "batch_size": 16,
+    "learning_rate": 3e-4,
+    "num_epochs": 5
+  }},
+  "data": {{
+    "max_length": 512
+  }}
+}}"""
+        
+        with open(config_path, "w") as f:
+            f.write(config_content)
+    
+    click.echo(f"✅ Project structure created at {click.style(str(project_path.absolute()), fg='green')}")
+    click.echo()
+    click.echo("📁 Project structure:")
+    click.echo(f"  {project_name}/")
+    for directory in directories:
+        click.echo(f"    {directory}/")
+    click.echo("    README.md")
+    click.echo("    configs/config.json")
+    click.echo()
+    click.echo("💡 Next steps:")
+    click.echo(f"  cd {project_name}")
+    click.echo("  # Add your data to data/raw/")
+    click.echo("  # Process data with: llmbuilder data load -i data/raw -o data/processed/input.txt")
 
 
 @main.command()
@@ -1568,6 +1742,11 @@ def create(preset, template, output, interactive, advanced_features):
         elif template:
             # Load from template file
             template_path = Path(f"llmbuilder/config/templates/{template}_config.json")
+            # Fix the path to look in the correct location
+            if not template_path.exists():
+                # Try relative to the package directory
+                template_path = Path(__file__).parent / "config" / "templates" / f"{template}_config.json"
+            
             if template_path.exists():
                 with open(template_path, "r") as f:
                     template_dict = json.load(f)
